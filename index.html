@@ -73,6 +73,12 @@
   }
   .btn:disabled { opacity: .6; cursor: default; }
   .btn:focus-visible { outline: 3px solid var(--s-lpg); outline-offset: 2px; }
+  .aksi { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; align-items: center; }
+  .btn-sekunder {
+    background: transparent; color: var(--ink);
+    text-decoration: none; display: inline-block; line-height: 1.2;
+  }
+  .btn-sekunder:hover { background: var(--line); }
 
   .l0 { --accent: var(--ok); }
   .l1 { --accent: var(--warn); }
@@ -178,6 +184,11 @@
     header nav { text-align: left; }
   }
 </style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#16202A">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Monitoring Gas">
 </head>
 <body>
 <div class="wrap">
@@ -187,9 +198,9 @@
       <h1>Monitoring Gas dan Lingkungan</h1>
       <p>Pembacaan sensor LPG, karbon monoksida, suhu, dan kelembapan dari perangkat ESP32.</p>
     </div>
-    <div>
+    <div class="aksi">
       <button id="btn-notif" class="btn" type="button">Aktifkan notifikasi</button>
-      <nav><a href="kalibrasi.html">Kalibrasi Ro →</a></nav>
+      <a class="btn btn-sekunder" href="kalibrasi.html">Kalibrasi Ro</a>
     </div>
   </header>
 
@@ -264,8 +275,9 @@
   const GRAFIK = {
     lpg: {
       id: "#gLPG",
+      tipe: "bar",
       yLabel: "ppm",
-      seri: [{ key: "mq2", label: "LPG (ppm)", warna: "--s-lpg", axis: "y" }],
+      seri: [{ key: "mq2", label: "LPG (ppm)", warna: "--s-lpg", axis: "y", tipe: "bar" }],
       batas: [
         { nilai: 200, label: "Batas waspada 200 ppm", axis: "y" },
         { nilai: 500, label: "Batas bahaya 500 ppm", axis: "y" }
@@ -274,16 +286,19 @@
     co: {
       id: "#gCO",
       yLabel: "ppm",
-      seri: [{ key: "mq7", label: "CO (ppm)", warna: "--s-co", axis: "y" }],
+      tipe: "line",
+      yLabel: "ppm",
+      seri: [{ key: "mq7", label: "CO (ppm)", warna: "--s-co", axis: "y", tipe: "line", area: true }],
       batas: [{ nilai: 25, label: "Batas bahaya 25 ppm", axis: "y" }]
     },
     env: {
       id: "#gEnv",
       yLabel: "Suhu (°C)",
       y1Label: "Kelembapan (%)",
+      tipe: "line",
       seri: [
-        { key: "suhu", label: "Suhu (°C)", warna: "--s-suhu", axis: "y" },
-        { key: "rh",   label: "Kelembapan (%)", warna: "--s-rh", axis: "y1" }
+        { key: "suhu", label: "Suhu (°C)", warna: "--s-suhu", axis: "y", tipe: "line", stepped: true },
+        { key: "rh",   label: "Kelembapan (%)", warna: "--s-rh", axis: "y1", tipe: "bar" }
       ],
       batas: [
         { nilai: 50, label: "Batas suhu 50 °C", axis: "y" },
@@ -371,9 +386,22 @@
     }
 
     notif.aktif = true;
-    const b = $("#btn-notif");
-    b.textContent = "Notifikasi aktif ✓";
-    b.disabled = true;
+    // Tombol selalu hilang setelah ditekan
+    $("#btn-notif").hidden = true;
+
+    if (!("Notification" in window) || Notification.permission === "granted") {
+      simpanStatusNotif(true);
+    } else {
+      // Izin ditolak atau pop-up ditutup: beri keterangan, dan tombol muncul lagi saat halaman dibuka ulang
+      const tombol = $("#btn-notif");
+      if (!$("#info-notif")) {
+        const info = document.createElement("p");
+        info.id = "info-notif";
+        info.style.cssText = "font-size:.85rem;color:var(--muted);margin:0;text-align:right;width:100%";
+        info.textContent = "Notifikasi diblokir. Izinkan di pengaturan browser, lalu muat ulang halaman.";
+        tombol.parentElement.appendChild(info);
+      }
+    }
     bunyi(POLA_WASPADA);   // tes suara
   }
 
@@ -537,27 +565,35 @@
     Chart.defaults.color = cssVar("--muted");
     Chart.defaults.borderColor = cssVar("--line");
 
-    const ds = g.seri.map((s) => ({
-      label: s.label, data: [], yAxisID: s.axis,
-      borderColor: cssVar(s.warna), backgroundColor: cssVar(s.warna),
-      borderWidth: 1.8, pointRadius: 0, tension: 0.25, spanGaps: true
-    }));
+    const ds = g.seri.map((s) => {
+      const warna = cssVar(s.warna);
+      const d = {
+        label: s.label, data: [], yAxisID: s.axis,
+        borderColor: warna,
+        backgroundColor: s.tipe === "bar" ? warna + "99" : (s.area ? warna + "33" : warna),
+        borderWidth: 1.8, pointRadius: 0, tension: 0.25, spanGaps: true,
+        fill: !!s.area, stepped: s.stepped ? "before" : false
+      };
+      if (s.tipe) d.type = s.tipe;
+      if (s.tipe === "bar") { d.borderRadius = 4; d.borderWidth = 0; }
+      return d;
+    });
     g.batas.forEach((b) => ds.push({
-      label: b.label, data: [], yAxisID: b.axis,
+      type: "line", label: b.label, data: [], yAxisID: b.axis,
       borderColor: cssVar("--bad"), borderDash: [6, 4], borderWidth: 1.2,
       pointRadius: 0, fill: false
     }));
 
     const skala = {
       x: { ticks: { maxTicksLimit: 7, maxRotation: 0 } },
-      y: { position: "left", title: { display: true, text: g.yLabel } }
+      y: { position: "left", title: { display: true, text: g.yLabel }, beginAtZero: g.tipe === "bar" }
     };
     if (g.y1Label) {
       skala.y1 = { position: "right", title: { display: true, text: g.y1Label }, grid: { drawOnChartArea: false } };
     }
 
     charts[kunci] = new Chart($(g.id), {
-      type: "line",
+      type: g.tipe || "line",
       data: { labels: [], datasets: ds },
       options: {
         responsive: true, maintainAspectRatio: false, animation: false,
@@ -618,9 +654,49 @@
   $("#btn-notif").addEventListener("click", aktifkanNotifikasi);
   $("#notif-ack").addEventListener("click", akuiAlarm);
 
+  // ====== STATUS NOTIFIKASI TERSIMPAN ======
+  const KUNCI_NOTIF = "notifAktif";
+
+  function simpanStatusNotif(aktif) {
+    try { localStorage.setItem(KUNCI_NOTIF, aktif ? "1" : "0"); } catch (e) {}
+  }
+
+  // Dianggap aktif jika pernah diaktifkan DAN izin browser masih diberikan
+  function sudahDiaktifkan() {
+    try {
+      return localStorage.getItem(KUNCI_NOTIF) === "1" &&
+             "Notification" in window &&
+             Notification.permission === "granted";
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Jika sudah pernah diaktifkan, tombol disembunyikan dan notifikasi langsung aktif.
+  // Browser tetap mewajibkan satu sentuhan untuk memutar suara, jadi sentuhan pertama
+  // di mana saja pada halaman akan mengaktifkan suara. Di APK (WebView), suara berbunyi
+  // tanpa sentuhan karena mediaPlaybackRequiresUserGesture = false.
+  // Jika belum pernah diaktifkan, tombol tetap tampil dan tidak ada sentuhan otomatis.
+  function siapkanNotifikasiOtomatis() {
+    if (!sudahDiaktifkan()) return;
+
+    notif.aktif = true;
+    $("#btn-notif").hidden = true;
+
+    const sentuh = () => {
+      if (notif.audio && notif.audio.state === "running") return;
+      aktifkanNotifikasi();
+    };
+
+    document.addEventListener("pointerdown", sentuh);
+    document.addEventListener("keydown", sentuh);
+  }
+
   // ====== MULAI ======
   bangunGrafik();
   perbaruiBanner();
+
+  siapkanNotifikasiOtomatis();
 
   if (API_URL.startsWith("ISI_")) {
     tampilGalat("isi dulu API_URL di bagian PENGATURAN pada file ini.");
@@ -631,6 +707,11 @@
     setInterval(muatGrafik, CHART_MS);
   }
   setInterval(perbaruiBanner, 1000);
+</script>
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  }
 </script>
 </body>
 </html>
