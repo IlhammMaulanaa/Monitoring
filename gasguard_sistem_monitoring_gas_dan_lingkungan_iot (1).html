@@ -79,7 +79,7 @@
 <body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col selection:bg-teal-500 selection:text-white">
 
   <!-- ========================================================= -->
-  <!-- HEADER & NAVIGASI UTAMA (BERSIH TANPA BAR SIMULASI)       -->
+  <!-- HEADER & NAVIGASI UTAMA                                   -->
   <!-- ========================================================= -->
   <header class="sticky top-0 z-30 bg-slate-900/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-800 text-white shadow-md">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
@@ -267,16 +267,13 @@
             <span class="text-sm font-medium text-slate-500 dark:text-slate-400">ppm</span>
           </div>
 
-          <!-- Progress Bar dengan Label di Atas Tick agar tidak bentrok dengan skala bawah -->
           <div class="mt-4 pt-6">
             <div class="relative w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-visible">
               <div id="bar-lpg" class="h-full rounded-full bg-teal-600 transition-all duration-500" style="width: 1.7%;"></div>
-              <!-- Waspada 200 (33.3%) -->
               <div class="absolute bottom-full mb-1.5 text-[11px] font-mono font-semibold text-amber-600 dark:text-amber-400 whitespace-nowrap" style="left: 33.3%; transform: translateX(-50%);">
                 Batas Waspada 200
               </div>
               <div class="absolute -top-1 w-0.5 h-4 bg-amber-500" style="left: 33.3%;"></div>
-              <!-- Bahaya 500 (83.3%) -->
               <div class="absolute bottom-full mb-1.5 text-[11px] font-mono font-semibold text-red-600 dark:text-red-400 whitespace-nowrap" style="left: 83.3%; transform: translateX(-85%);">
                 Batas Bahaya 500
               </div>
@@ -315,11 +312,9 @@
             <span class="text-sm font-medium text-slate-500 dark:text-slate-400">ppm</span>
           </div>
 
-          <!-- Progress Bar dengan Label di Atas Tick -->
           <div class="mt-4 pt-6">
             <div class="relative w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-visible">
               <div id="bar-co" class="h-full rounded-full bg-teal-600 transition-all duration-500" style="width: 4.1%;"></div>
-              <!-- Bahaya 25 ppm (62.5%) -->
               <div class="absolute bottom-full mb-1.5 text-[11px] font-mono font-semibold text-red-600 dark:text-red-400 whitespace-nowrap" style="left: 62.5%; transform: translateX(-50%);">
                 Batas Bahaya 25 ppm
               </div>
@@ -358,11 +353,9 @@
             <span class="text-sm font-medium text-slate-500 dark:text-slate-400">°C</span>
           </div>
 
-          <!-- Progress Bar dengan Label di Atas Tick -->
           <div class="mt-4 pt-6">
             <div class="relative w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-visible">
               <div id="bar-suhu" class="h-full rounded-full bg-teal-600 transition-all duration-500" style="width: 46.3%;"></div>
-              <!-- Bahaya 50°C (83.3%) -->
               <div class="absolute bottom-full mb-1.5 text-[11px] font-mono font-semibold text-red-600 dark:text-red-400 whitespace-nowrap" style="left: 83.3%; transform: translateX(-85%);">
                 Batas Bahaya 50°C
               </div>
@@ -401,11 +394,9 @@
             <span class="text-sm font-medium text-slate-500 dark:text-slate-400">%</span>
           </div>
 
-          <!-- Progress Bar dengan Label di Atas Tick (Tidak Bentrok 80% dan 100%) -->
           <div class="mt-4 pt-6">
             <div class="relative w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-visible">
               <div id="bar-rh" class="h-full rounded-full bg-teal-600 transition-all duration-500" style="width: 46.55%;"></div>
-              <!-- Bahaya 80% -->
               <div class="absolute bottom-full mb-1.5 text-[11px] font-mono font-semibold text-red-600 dark:text-red-400 whitespace-nowrap" style="left: 80%; transform: translateX(-85%);">
                 Batas Bahaya 80%
               </div>
@@ -420,7 +411,7 @@
 
       </div>
 
-      <!-- 3. Bagian Riwayat & Grafik Tren -->
+      <!-- 3. Bagian Riwayat & Grafik Tren (MODEL GRAFIK DIPERBARUI) -->
       <div class="space-y-4 pt-2">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
@@ -437,41 +428,47 @@
           </div>
         </div>
 
-        <!-- Baris Grafik 1: LPG & CO (Dengan Skala Zoom Tren & Statistik Min/Avg/Max) -->
+        <!-- Baris Grafik 1: LPG & CO (Dengan Gradien Area, Crosshair Hover & Statistik) -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           
           <!-- Grafik LPG -->
-          <div class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 shadow-glass dark:shadow-glass-dark">
-            <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
-              <div>
-                <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100">Gas LPG (ppm)</h3>
-                <div id="stats-lpg" class="text-[11px] font-mono text-slate-500 dark:text-slate-400 mt-0.5">
-                  Min: 9.10 • Rata²: 10.35 • Maks: 11.40 ppm
+          <div class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 shadow-glass dark:shadow-glass-dark transition-all hover:border-teal-500/30">
+            <div class="flex flex-wrap items-start justify-between gap-2 mb-3">
+              <div class="flex items-start gap-2.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-teal-500 mt-1.5 shadow-[0_0_8px_rgba(20,184,166,0.7)] shrink-0"></span>
+                <div>
+                  <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100">Gas LPG (ppm)</h3>
+                  <div id="stats-lpg" class="text-[11px] font-mono text-slate-500 dark:text-slate-400 mt-0.5">
+                    Min: 9.10 • Rata²: 10.35 • Maks: 11.40 ppm
+                  </div>
                 </div>
               </div>
               <button onclick="toggleChartScale('lpg')" id="scaleBtn-lpg" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-teal-500/10 text-teal-700 dark:text-teal-300 border border-teal-500/30 hover:bg-teal-500/20 transition">
                 Skala Zoom Tren
               </button>
             </div>
-            <div class="h-60 w-full mt-2">
+            <div class="h-64 w-full mt-1">
               <canvas id="chartLpg"></canvas>
             </div>
           </div>
 
           <!-- Grafik Karbon Monoksida -->
-          <div class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 shadow-glass dark:shadow-glass-dark">
-            <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
-              <div>
-                <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100">Karbon Monoksida / CO (ppm)</h3>
-                <div id="stats-co" class="text-[11px] font-mono text-slate-500 dark:text-slate-400 mt-0.5">
-                  Min: 1.15 • Rata²: 1.62 • Maks: 2.25 ppm
+          <div class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 shadow-glass dark:shadow-glass-dark transition-all hover:border-purple-500/30">
+            <div class="flex flex-wrap items-start justify-between gap-2 mb-3">
+              <div class="flex items-start gap-2.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-purple-500 mt-1.5 shadow-[0_0_8px_rgba(168,85,247,0.7)] shrink-0"></span>
+                <div>
+                  <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100">Karbon Monoksida / CO (ppm)</h3>
+                  <div id="stats-co" class="text-[11px] font-mono text-slate-500 dark:text-slate-400 mt-0.5">
+                    Min: 1.15 • Rata²: 1.62 • Maks: 2.25 ppm
+                  </div>
                 </div>
               </div>
               <button onclick="toggleChartScale('co')" id="scaleBtn-co" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/30 hover:bg-purple-500/20 transition">
                 Skala Zoom Tren
               </button>
             </div>
-            <div class="h-60 w-full mt-2">
+            <div class="h-64 w-full mt-1">
               <canvas id="chartCo"></canvas>
             </div>
           </div>
@@ -479,13 +476,17 @@
         </div>
 
         <!-- Baris Grafik 2: Suhu dan Kelembapan -->
-        <div class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 shadow-glass dark:shadow-glass-dark">
+        <div class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 shadow-glass dark:shadow-glass-dark transition-all hover:border-rose-500/25">
           <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-            <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100">Suhu (°C) dan Kelembapan (%)</h3>
-            <div class="flex flex-wrap items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400">
-              <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-cyan-500/60"></span> Kelembapan (%)</span>
-              <span class="inline-flex items-center gap-1.5"><span class="w-3 h-0.5 bg-rose-500"></span> Suhu (°C)</span>
-              <span class="inline-flex items-center gap-1.5"><span class="w-3 h-0.5 border-t-2 border-dashed border-red-500"></span> Batas Suhu 50°C / RH 80%</span>
+            <div>
+              <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100">Suhu (°C) dan Kelembapan (%)</h3>
+              <div id="stats-env" class="text-[11px] font-mono text-slate-500 dark:text-slate-400 mt-0.5">
+                Suhu Rata²: 28.1°C • Kelembapan Rata²: 48.5%
+              </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-3 text-[11px] font-medium text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/70 px-3 py-1.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+              <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Suhu (°C)</span>
+              <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-cyan-500/70"></span> Kelembapan (%)</span>
             </div>
           </div>
           <div class="h-64 w-full">
@@ -617,10 +618,8 @@
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse text-xs sm:text-sm">
             <thead id="exportTableHead" class="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 font-semibold border-b border-slate-200 dark:border-slate-800">
-              <!-- Diisi dinamis -->
             </thead>
             <tbody id="exportTableBody" class="divide-y divide-slate-100 dark:divide-slate-800 font-mono text-xs">
-              <!-- Diisi dinamis -->
             </tbody>
           </table>
         </div>
@@ -987,10 +986,10 @@
       updatedAt: "Menunggu sinkronisasi..."
     };
 
-    // Riwayat Data dari Google Sheets (atau fallback realistis jika sheet masih kosong)
+    // Riwayat Data dari Google Sheets
     let historyRecords = [];
 
-    // Nilai Kalibrasi Ro Aktif (Default sesuai hasil kalibrasi akhir)
+    // Nilai Kalibrasi Ro Aktif
     let activeRoConfig = {
       ro_mq2_1: 1.1893,
       ro_mq2_2: 1.3302,
@@ -1003,6 +1002,70 @@
     let chartCoInstance = null;
     let chartEnvInstance = null;
     let chartKalInstance = null;
+
+    // -----------------------------------------------------------
+    // PLUGIN KUSTOM CHART.JS: GARIS PANDUAN VERTIKAL SAAT HOVER
+    // -----------------------------------------------------------
+    const verticalCrosshairPlugin = {
+      id: 'verticalCrosshair',
+      afterDatasetsDraw(chart) {
+        if (chart.tooltip && chart.tooltip._active && chart.tooltip._active.length) {
+          const activePoint = chart.tooltip._active[0];
+          const { ctx } = chart;
+          const x = activePoint.element.x;
+          const topY = chart.scales.y.top;
+          const bottomY = chart.scales.y.bottom;
+          const isDark = document.documentElement.classList.contains('dark');
+
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(x, topY);
+          ctx.lineTo(x, bottomY);
+          ctx.lineWidth = 1.25;
+          ctx.strokeStyle = isDark ? 'rgba(148, 163, 184, 0.35)' : 'rgba(100, 116, 139, 0.3)';
+          ctx.setLineDash([4, 4]);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+    };
+    Chart.register(verticalCrosshairPlugin);
+
+    // Helper Gradien Vertikal Halus untuk Area Grafik
+    function createVerticalGradient(ctx, colorTop, colorBottom) {
+      const gradient = ctx.createLinearGradient(0, 0, 0, 260);
+      gradient.addColorStop(0, colorTop);
+      gradient.addColorStop(1, colorBottom);
+      return gradient;
+    }
+
+    // Konfigurasi Tooltip Modern Konsisten
+    function getModernTooltipConfig(unitSuffix = '') {
+      const isDark = document.documentElement.classList.contains('dark');
+      return {
+        enabled: true,
+        backgroundColor: isDark ? 'rgba(15, 23, 42, 0.94)' : 'rgba(255, 255, 255, 0.96)',
+        titleColor: isDark ? '#f8fafc' : '#0f172a',
+        bodyColor: isDark ? '#cbd5e1' : '#334155',
+        borderColor: isDark ? 'rgba(51, 65, 85, 0.9)' : 'rgba(203, 213, 225, 0.9)',
+        borderWidth: 1,
+        padding: 11,
+        cornerRadius: 12,
+        boxPadding: 5,
+        usePointStyle: true,
+        titleFont: { family: 'Inter, sans-serif', size: 12, weight: '700' },
+        bodyFont: { family: 'JetBrains Mono, monospace', size: 12, weight: '600' },
+        callbacks: {
+          label(context) {
+            const label = context.dataset.label || '';
+            const val = context.parsed.y;
+            if (val === null || val === undefined) return label;
+            const formatted = Number.isInteger(val) ? val : val.toFixed(2);
+            return ` ${label}: ${formatted}${unitSuffix ? ' ' + unitSuffix : ''}`;
+          }
+        }
+      };
+    }
 
     // -----------------------------------------------------------
     // 1. INISIALISASI TEMA (LIGHT / DARK)
@@ -1054,9 +1117,7 @@
         gain.connect(audioCtx.destination);
         osc.start(now);
         osc.stop(now + durationSec + 0.02);
-      } catch (e) {
-        // Abaikan jika browser memblokir autoplay sebelum klik pertama
-      }
+      } catch (e) {}
     }
 
     function updateAlarmLoop(level) {
@@ -1068,7 +1129,6 @@
       if (level === 'NORMAL' || isAlarmMuted) return;
 
       if (level === 'WASPADA') {
-        // 2 beep pendek berjeda setiap 2.2 detik
         const triggerWaspadaBeep = () => {
           playSingleTone(880, 0.14, 0);
           playSingleTone(880, 0.14, 0.22);
@@ -1076,7 +1136,6 @@
         triggerWaspadaBeep();
         beepInterval = setInterval(triggerWaspadaBeep, 2200);
       } else if (level === 'BAHAYA') {
-        // Beep darurat dua nada cepat setiap 0.85 detik
         const triggerBahayaBeep = () => {
           playSingleTone(1280, 0.16, 0);
           playSingleTone(1040, 0.18, 0.20);
@@ -1115,7 +1174,6 @@
       updateAlarmLoop(newLevel);
 
       if (escalated) {
-        // 1. Native Browser Notification Pop-up
         if ('Notification' in window) {
           if (Notification.permission === 'granted') {
             new Notification(
@@ -1134,7 +1192,6 @@
           }
         }
 
-        // 2. In-App Alert Pop-up Modal
         const modal = document.getElementById('alarmAlertModal');
         const box = document.getElementById('alarmModalBox');
         const badge = document.getElementById('alarmModalBadge');
@@ -1165,7 +1222,6 @@
       modal.classList.remove('flex');
     }
 
-    // Minta izin notifikasi browser pada interaksi pertama pengguna
     document.addEventListener('click', () => {
       ensureAudioContext();
       if ('Notification' in window && Notification.permission === 'default') {
@@ -1227,7 +1283,7 @@
     function generateFallbackHistory(days = 7) {
       const list = [];
       const now = Date.now();
-      const totalPoints = days * 24; // 1 titik per jam
+      const totalPoints = days * 24;
       for (let i = totalPoints; i >= 0; i--) {
         const t = new Date(now - i * 3600 * 1000);
         const wave = Math.sin(i / 4);
@@ -1255,7 +1311,6 @@
 
         const data = await response.json();
 
-        // Parse riwayat jika tersedia dari Google Sheets
         const rawList = data.riwayat || data.history || (Array.isArray(data) ? data : []);
         if (Array.isArray(rawList) && rawList.length > 0) {
           historyRecords = rawList.map(item => ({
@@ -1270,7 +1325,6 @@
           historyRecords = generateFallbackHistory(7);
         }
 
-        // Parse pembacaan terbaru
         const latest = data.terbaru || data.latest || (historyRecords.length ? historyRecords[historyRecords.length - 1] : null);
         if (latest) {
           const dt = new Date(latest.waktu || Date.now());
@@ -1287,7 +1341,6 @@
           };
         }
 
-        // Parse Config Ro jika dikirimkan
         if (data.config) {
           if (data.config.ro_mq2_1) activeRoConfig.ro_mq2_1 = Number(data.config.ro_mq2_1);
           if (data.config.ro_mq2_2) activeRoConfig.ro_mq2_2 = Number(data.config.ro_mq2_2);
@@ -1332,9 +1385,7 @@
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({ token: API_CONFIG.TOKEN, ...payload })
         });
-      } catch (e) {
-        // Tetap tangani gracefully
-      }
+      } catch (e) {}
     }
 
     // -----------------------------------------------------------
@@ -1424,14 +1475,12 @@
       const reading = getEffectiveSensorReadings();
       const { lpg, co, suhu, rh, updatedAt } = reading;
 
-      // Update Angka Utama
       document.getElementById('val-lpg').textContent = lpg.toFixed(2);
       document.getElementById('val-co').textContent = co.toFixed(2);
       document.getElementById('val-suhu').textContent = suhu.toFixed(1);
       document.getElementById('val-rh').textContent = rh.toFixed(2);
       document.getElementById('lastUpdatedText').textContent = updatedAt;
 
-      // Evaluasi Status Per Parameter (Sesuai Kode ESP32)
       const stLpg = lpg >= 500 ? 'BAHAYA' : (lpg >= 200 ? 'WASPADA' : 'NORMAL');
       const stCo = co >= 25 ? 'BAHAYA' : 'NORMAL';
       const stSuhu = suhu > 50 ? 'BAHAYA' : 'NORMAL';
@@ -1442,7 +1491,6 @@
       updateCardVisual('suhu', stSuhu, Math.min((suhu / 60) * 100, 100));
       updateCardVisual('rh', stRh, Math.min(rh, 100));
 
-      // Evaluasi Status Global
       const triggers = [];
       if (stLpg === 'BAHAYA') triggers.push(`Gas LPG Tinggi (${lpg.toFixed(1)} ppm)`);
       else if (stLpg === 'WASPADA') triggers.push(`Gas LPG Waspada (${lpg.toFixed(1)} ppm)`);
@@ -1537,7 +1585,7 @@
     }
 
     // -----------------------------------------------------------
-    // 6. GRAFIK TREN DENGAN SKALA ZOOM OTOMATIS (CHART.JS)
+    // 6. GRAFIK TREN MODERN (SMOOTH AREA GRADIENT + CROSSHAIR)
     // -----------------------------------------------------------
     function setRange(rangeKey) {
       currentRange = rangeKey;
@@ -1584,7 +1632,43 @@
       const isDark = document.documentElement.classList.contains('dark');
       return {
         text: isDark ? '#94a3b8' : '#64748b',
-        grid: isDark ? 'rgba(51, 65, 85, 0.45)' : 'rgba(226, 232, 240, 0.8)'
+        grid: isDark ? 'rgba(51, 65, 85, 0.35)' : 'rgba(226, 232, 240, 0.7)'
+      };
+    }
+
+    function buildBaseChartOptions(colors, unitSuffix = '') {
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 450, easing: 'easeOutQuart' },
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: getModernTooltipConfig(unitSuffix)
+        },
+        scales: {
+          x: {
+            border: { display: false },
+            ticks: {
+              color: colors.text,
+              maxTicksLimit: 7,
+              font: { family: 'JetBrains Mono, monospace', size: 11 }
+            },
+            grid: { display: false }
+          },
+          y: {
+            border: { display: false, dash: [4, 4] },
+            ticks: {
+              color: colors.text,
+              font: { family: 'JetBrains Mono, monospace', size: 11 },
+              padding: 8
+            },
+            grid: {
+              color: colors.grid,
+              tickLength: 0
+            }
+          }
+        }
       };
     }
 
@@ -1596,16 +1680,7 @@
       chartLpgInstance = new Chart(ctxLpg, {
         type: 'line',
         data: { labels: [], datasets: [] },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: { mode: 'index', intersect: false },
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { ticks: { color: colors.text, maxTicksLimit: 7 }, grid: { display: false } },
-            y: { ticks: { color: colors.text }, grid: { color: colors.grid } }
-          }
-        }
+        options: buildBaseChartOptions(colors, 'ppm')
       });
 
       // Chart CO
@@ -1613,34 +1688,54 @@
       chartCoInstance = new Chart(ctxCo, {
         type: 'line',
         data: { labels: [], datasets: [] },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: { mode: 'index', intersect: false },
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { ticks: { color: colors.text, maxTicksLimit: 7 }, grid: { display: false } },
-            y: { ticks: { color: colors.text }, grid: { color: colors.grid } }
-          }
-        }
+        options: buildBaseChartOptions(colors, 'ppm')
       });
 
-      // Chart Suhu & Kelembapan
+      // Chart Suhu & Kelembapan (Dual-Axis Modern)
       const ctxEnv = document.getElementById('chartEnv').getContext('2d');
+      const envOptions = buildBaseChartOptions(colors);
+      envOptions.plugins.tooltip = {
+        ...getModernTooltipConfig(),
+        callbacks: {
+          label(context) {
+            const label = context.dataset.label || '';
+            const val = context.parsed.y;
+            const unit = context.dataset.yAxisID === 'y1' ? '%' : '°C';
+            return ` ${label}: ${val.toFixed(1)} ${unit}`;
+          }
+        }
+      };
+      envOptions.scales.x.ticks.maxTicksLimit = 8;
+      envOptions.scales.y.title = {
+        display: true,
+        text: 'Suhu (°C)',
+        color: '#f43f5e',
+        font: { family: 'Inter, sans-serif', size: 11, weight: '600' }
+      };
+      envOptions.scales.y1 = {
+        type: 'linear',
+        position: 'right',
+        min: 0,
+        max: 100,
+        border: { display: false },
+        ticks: {
+          color: '#06b6d4',
+          font: { family: 'JetBrains Mono, monospace', size: 11 },
+          padding: 8
+        },
+        grid: { drawOnChartArea: false },
+        title: {
+          display: true,
+          text: 'Kelembapan (%)',
+          color: '#06b6d4',
+          font: { family: 'Inter, sans-serif', size: 11, weight: '600' }
+        }
+      };
+
       chartEnvInstance = new Chart(ctxEnv, {
         type: 'line',
         data: { labels: [], datasets: [] },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: { mode: 'index', intersect: false },
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { ticks: { color: colors.text, maxTicksLimit: 8 }, grid: { display: false } },
-            y: { type: 'linear', position: 'left', ticks: { color: colors.text }, grid: { color: colors.grid }, title: { display: true, text: 'Suhu (°C)', color: colors.text } },
-            y1: { type: 'linear', position: 'right', min: 0, max: 100, ticks: { color: colors.text }, grid: { drawOnChartArea: false }, title: { display: true, text: 'RH (%)', color: colors.text } }
-          }
-        }
+        options: envOptions
       });
 
       updateAllChartsData();
@@ -1669,15 +1764,29 @@
       const stCo = computeStats(coArr);
       document.getElementById('stats-co').textContent = `Min: ${stCo.min.toFixed(2)} • Rata²: ${stCo.avg.toFixed(2)} • Maks: ${stCo.max.toFixed(2)} ppm`;
 
-      // Update Grafik LPG
+      const stSuhu = computeStats(suhuArr);
+      const stRh = computeStats(rhArr);
+      const statsEnvEl = document.getElementById('stats-env');
+      if (statsEnvEl) {
+        statsEnvEl.textContent = `Suhu Rata²: ${stSuhu.avg.toFixed(1)}°C (${stSuhu.min.toFixed(1)}–${stSuhu.max.toFixed(1)}°C) • Kelembapan Rata²: ${stRh.avg.toFixed(1)}%`;
+      }
+
+      // 1. Update Grafik LPG dengan Gradien Area Modern
+      const ctxLpg = document.getElementById('chartLpg').getContext('2d');
+      const gradLpg = createVerticalGradient(ctxLpg, 'rgba(13, 148, 136, 0.28)', 'rgba(13, 148, 136, 0.0)');
+
       const lpgDatasets = [{
-        label: 'LPG (ppm)',
+        label: 'Gas LPG',
         data: lpgArr,
-        borderColor: '#0d9488',
-        backgroundColor: 'rgba(13, 148, 136, 0.14)',
-        borderWidth: 2.2,
-        pointRadius: 2.5,
-        tension: 0.32,
+        borderColor: '#14b8a6',
+        backgroundColor: gradLpg,
+        borderWidth: 2.5,
+        pointRadius: 0,
+        pointHoverRadius: 6,
+        pointHoverBackgroundColor: '#14b8a6',
+        pointHoverBorderColor: '#ffffff',
+        pointHoverBorderWidth: 2.5,
+        tension: 0.38,
         fill: true
       }];
 
@@ -1689,23 +1798,30 @@
         chartLpgInstance.options.scales.y.min = 0;
         chartLpgInstance.options.scales.y.max = Math.max(550, Math.ceil(stLpg.max * 1.1));
         lpgDatasets.push(
-          { label: 'Batas Waspada (200)', data: labels.map(() => 200), borderColor: '#f59e0b', borderDash: [6, 4], borderWidth: 1.5, pointRadius: 0 },
-          { label: 'Batas Bahaya (500)', data: labels.map(() => 500), borderColor: '#ef4444', borderDash: [6, 4], borderWidth: 1.5, pointRadius: 0 }
+          { label: 'Batas Waspada', data: labels.map(() => 200), borderColor: '#f59e0b', borderDash: [6, 4], borderWidth: 1.5, pointRadius: 0, pointHoverRadius: 0 },
+          { label: 'Batas Bahaya', data: labels.map(() => 500), borderColor: '#ef4444', borderDash: [6, 4], borderWidth: 1.5, pointRadius: 0, pointHoverRadius: 0 }
         );
       }
       chartLpgInstance.data.labels = labels;
       chartLpgInstance.data.datasets = lpgDatasets;
       chartLpgInstance.update();
 
-      // Update Grafik CO
+      // 2. Update Grafik CO dengan Gradien Area Modern
+      const ctxCo = document.getElementById('chartCo').getContext('2d');
+      const gradCo = createVerticalGradient(ctxCo, 'rgba(139, 92, 246, 0.28)', 'rgba(139, 92, 246, 0.0)');
+
       const coDatasets = [{
-        label: 'CO (ppm)',
+        label: 'Gas CO',
         data: coArr,
         borderColor: '#8b5cf6',
-        backgroundColor: 'rgba(139, 92, 246, 0.14)',
-        borderWidth: 2.2,
-        pointRadius: 2.5,
-        tension: 0.32,
+        backgroundColor: gradCo,
+        borderWidth: 2.5,
+        pointRadius: 0,
+        pointHoverRadius: 6,
+        pointHoverBackgroundColor: '#8b5cf6',
+        pointHoverBorderColor: '#ffffff',
+        pointHoverBorderWidth: 2.5,
+        tension: 0.38,
         fill: true
       }];
 
@@ -1717,36 +1833,49 @@
         chartCoInstance.options.scales.y.min = 0;
         chartCoInstance.options.scales.y.max = Math.max(30, Math.ceil(stCo.max * 1.15));
         coDatasets.push(
-          { label: 'Batas Bahaya CO (25)', data: labels.map(() => 25), borderColor: '#ef4444', borderDash: [6, 4], borderWidth: 1.5, pointRadius: 0 }
+          { label: 'Batas Bahaya CO', data: labels.map(() => 25), borderColor: '#ef4444', borderDash: [6, 4], borderWidth: 1.5, pointRadius: 0, pointHoverRadius: 0 }
         );
       }
       chartCoInstance.data.labels = labels;
       chartCoInstance.data.datasets = coDatasets;
       chartCoInstance.update();
 
-      // Update Grafik Lingkungan
+      // 3. Update Grafik Lingkungan (Suhu & Kelembapan)
+      const ctxEnv = document.getElementById('chartEnv').getContext('2d');
+      const gradRh = createVerticalGradient(ctxEnv, 'rgba(6, 182, 212, 0.22)', 'rgba(6, 182, 212, 0.0)');
+
       chartEnvInstance.data.labels = labels;
       chartEnvInstance.data.datasets = [
         {
-          label: 'Suhu (°C)',
+          label: 'Suhu',
           data: suhuArr,
           borderColor: '#f43f5e',
-          backgroundColor: 'rgba(244, 63, 94, 0.1)',
-          borderWidth: 2.2,
-          pointRadius: 2,
-          tension: 0.3,
-          yAxisID: 'y'
+          backgroundColor: 'transparent',
+          borderWidth: 2.6,
+          pointRadius: 0,
+          pointHoverRadius: 6,
+          pointHoverBackgroundColor: '#f43f5e',
+          pointHoverBorderColor: '#ffffff',
+          pointHoverBorderWidth: 2.5,
+          tension: 0.38,
+          yAxisID: 'y',
+          order: 1
         },
         {
-          label: 'Kelembapan (%)',
+          label: 'Kelembapan',
           data: rhArr,
           borderColor: '#06b6d4',
-          backgroundColor: 'rgba(6, 182, 212, 0.12)',
+          backgroundColor: gradRh,
           borderWidth: 2,
-          pointRadius: 2,
-          tension: 0.3,
+          pointRadius: 0,
+          pointHoverRadius: 5,
+          pointHoverBackgroundColor: '#06b6d4',
+          pointHoverBorderColor: '#ffffff',
+          pointHoverBorderWidth: 2,
+          tension: 0.38,
           fill: true,
-          yAxisID: 'y1'
+          yAxisID: 'y1',
+          order: 2
         }
       ];
       chartEnvInstance.update();
@@ -1761,7 +1890,17 @@
           ch.options.scales.y.ticks.color = colors.text;
           ch.options.scales.y.grid.color = colors.grid;
         }
-        if (ch.options.scales.y1) ch.options.scales.y1.ticks.color = colors.text;
+        if (ch.options.scales.y1) ch.options.scales.y1.ticks.color = '#06b6d4';
+        if (ch.options.plugins && ch.options.plugins.tooltip) {
+          const isDark = document.documentElement.classList.contains('dark');
+          ch.options.plugins.tooltip.backgroundColor = isDark ? 'rgba(15, 23, 42, 0.94)' : 'rgba(255, 255, 255, 0.96)';
+          ch.options.plugins.tooltip.titleColor = isDark ? '#f8fafc' : '#0f172a';
+          ch.options.plugins.tooltip.bodyColor = isDark ? '#cbd5e1' : '#334155';
+          ch.options.plugins.tooltip.borderColor = isDark ? 'rgba(51, 65, 85, 0.9)' : 'rgba(203, 213, 225, 0.9)';
+        }
+        if (ch === chartKalInstance && ch.options.plugins && ch.options.plugins.legend) {
+          ch.options.plugins.legend.labels.color = colors.text;
+        }
         ch.update();
       });
     }
@@ -1965,27 +2104,72 @@
       const ctx = document.getElementById('chartKalibrasi').getContext('2d');
       const colors = getChartColors();
       const minutes = Array.from({ length: 55 }, (_, i) => `M-${i + 6}`);
+      const options = buildBaseChartOptions(colors, 'kΩ');
+
+      options.plugins.legend = {
+        display: true,
+        position: 'top',
+        align: 'end',
+        labels: {
+          color: colors.text,
+          usePointStyle: true,
+          pointStyle: 'circle',
+          boxWidth: 8,
+          boxHeight: 8,
+          padding: 16,
+          font: { family: 'Inter, sans-serif', size: 12, weight: '600' }
+        }
+      };
+      options.scales.x.ticks.maxTicksLimit = 10;
 
       chartKalInstance = new Chart(ctx, {
         type: 'line',
         data: {
           labels: minutes,
           datasets: [
-            { label: 'MQ-2 S1 (kΩ)', data: minutes.map((_, i) => +(11.69 + Math.sin(i / 6) * 0.06).toFixed(3)), borderColor: '#0d9488', borderWidth: 2, pointRadius: 1.5, tension: 0.3 },
-            { label: 'MQ-2 S2 (kΩ)', data: minutes.map((_, i) => +(13.08 + Math.cos(i / 7) * 0.07).toFixed(3)), borderColor: '#3b82f6', borderWidth: 2, pointRadius: 1.5, tension: 0.3 },
-            { label: 'MQ-7 S1 (kΩ)', data: minutes.map((_, i) => +(13.63 + Math.sin(i / 5) * 0.08).toFixed(3)), borderColor: '#8b5cf6', borderWidth: 2, pointRadius: 1.5, tension: 0.3 },
-            { label: 'MQ-7 S2 (kΩ)', data: minutes.map((_, i) => +(32.11 + Math.cos(i / 8) * 0.14).toFixed(3)), borderColor: '#f59e0b', borderWidth: 2, pointRadius: 1.5, tension: 0.3 }
+            {
+              label: 'MQ-2 S1',
+              data: minutes.map((_, i) => +(11.69 + Math.sin(i / 6) * 0.06).toFixed(3)),
+              borderColor: '#14b8a6',
+              backgroundColor: 'rgba(20, 184, 166, 0.08)',
+              borderWidth: 2.3,
+              pointRadius: 0,
+              pointHoverRadius: 5,
+              tension: 0.35
+            },
+            {
+              label: 'MQ-2 S2',
+              data: minutes.map((_, i) => +(13.08 + Math.cos(i / 7) * 0.07).toFixed(3)),
+              borderColor: '#3b82f6',
+              backgroundColor: 'rgba(59, 130, 246, 0.08)',
+              borderWidth: 2.3,
+              pointRadius: 0,
+              pointHoverRadius: 5,
+              tension: 0.35
+            },
+            {
+              label: 'MQ-7 S1',
+              data: minutes.map((_, i) => +(13.63 + Math.sin(i / 5) * 0.08).toFixed(3)),
+              borderColor: '#8b5cf6',
+              backgroundColor: 'rgba(139, 92, 246, 0.08)',
+              borderWidth: 2.3,
+              pointRadius: 0,
+              pointHoverRadius: 5,
+              tension: 0.35
+            },
+            {
+              label: 'MQ-7 S2',
+              data: minutes.map((_, i) => +(32.11 + Math.cos(i / 8) * 0.14).toFixed(3)),
+              borderColor: '#f59e0b',
+              backgroundColor: 'rgba(245, 158, 11, 0.08)',
+              borderWidth: 2.3,
+              pointRadius: 0,
+              pointHoverRadius: 5,
+              tension: 0.35
+            }
           ]
         },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: { mode: 'index', intersect: false },
-          scales: {
-            x: { ticks: { color: colors.text, maxTicksLimit: 10 }, grid: { display: false } },
-            y: { ticks: { color: colors.text }, grid: { color: colors.grid } }
-          }
-        }
+        options: options
       });
     }
 
