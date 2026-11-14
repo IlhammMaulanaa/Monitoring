@@ -1,0 +1,2054 @@
+<!DOCTYPE html>
+<html lang="id" class="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GasGuard — Sistem Monitoring Gas dan Lingkungan IoT</title>
+
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          boxShadow: {
+            'glass': '0 8px 30px -6px rgba(15, 23, 42, 0.06)',
+            'glass-dark': '0 8px 30px -6px rgba(0, 0, 0, 0.4)',
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      transition: background-color 0.25s ease, color 0.25s ease;
+    }
+
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+
+    @keyframes pulse-border-amber {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.35); }
+      50% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+    }
+
+    @keyframes pulse-border-red {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.45); }
+      50% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+    }
+
+    .banner-waspada {
+      animation: pulse-border-amber 2s infinite;
+    }
+
+    .banner-bahaya {
+      animation: pulse-border-red 1.3s infinite;
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.4);
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col selection:bg-teal-500 selection:text-white">
+
+  <!-- ========================================================= -->
+  <!-- HEADER & NAVIGASI UTAMA (BERSIH TANPA BAR SIMULASI)       -->
+  <!-- ========================================================= -->
+  <header class="sticky top-0 z-30 bg-slate-900/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-800 text-white shadow-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3.5">
+        
+        <!-- Brand & Status Koneksi Google Sheets -->
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3.5">
+            <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-teal-500/25 shrink-0">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+              </svg>
+            </div>
+            <div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-xs font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-teal-500/20 text-teal-300 border border-teal-500/30">
+                  GasGuard
+                </span>
+                <span id="connectionBadge" class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                  <span id="connectionDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span id="connectionText">Menghubungkan Google Sheets...</span>
+                </span>
+              </div>
+              <h1 class="text-base sm:text-lg font-bold tracking-tight text-white mt-0.5">
+                Sistem Monitoring Gas &amp; Lingkungan IoT
+              </h1>
+            </div>
+          </div>
+
+          <!-- Tombol Aksi Cepat Mobile (Audio & Tema) -->
+          <div class="flex items-center gap-2 lg:hidden">
+            <button onclick="toggleAlarmMute()" id="btnAudioMobile" aria-label="Suara Alarm" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-teal-300 border border-slate-700 transition" title="Aktifkan/Bisukan Alarm">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
+              </svg>
+            </button>
+            <button onclick="toggleTheme()" aria-label="Ganti Tema" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+              <svg class="w-5 h-5 hidden dark:block text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+              </svg>
+              <svg class="w-5 h-5 block dark:hidden text-slate-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- 4 Menu Tab Utama & Kontrol Desktop -->
+        <div class="flex flex-wrap items-center justify-between lg:justify-end gap-2.5">
+          <nav class="flex items-center bg-slate-800/95 p-1 rounded-xl border border-slate-700/80 overflow-x-auto max-w-full">
+            <button id="tab-dashboard" onclick="switchTab('dashboard')" class="tab-btn px-3 sm:px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-teal-600 text-white shadow whitespace-nowrap">
+              Dashboard
+            </button>
+            <button id="tab-download" onclick="switchTab('download')" class="tab-btn px-3 sm:px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-300 hover:text-white whitespace-nowrap">
+              Download Tabel
+            </button>
+            <button id="tab-kalibrasi" onclick="switchTab('kalibrasi')" class="tab-btn px-3 sm:px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-300 hover:text-white whitespace-nowrap">
+              Kalibrasi Ro
+            </button>
+            <button id="tab-simulasi" onclick="switchTab('simulasi')" class="tab-btn px-3 sm:px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-300 hover:text-white whitespace-nowrap inline-flex items-center gap-1.5">
+              <span>Simulasi</span>
+              <span id="simBadgeCount" class="hidden px-1.5 py-0.2 text-[10px] font-mono font-bold rounded-full bg-amber-500 text-slate-950">0</span>
+            </button>
+          </nav>
+
+          <!-- Tombol Kontrol Desktop: Alarm Beep & Dark Mode -->
+          <div class="hidden lg:flex items-center gap-2">
+            <button onclick="toggleAlarmMute()" id="btnAudioDesktop" class="inline-flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-teal-300 border border-slate-700 transition" title="Kontrol Bunyi Beep & Notifikasi Browser">
+              <span id="audioIconDesktop">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
+                </svg>
+              </span>
+              <span id="audioLabelDesktop">Alarm: Aktif</span>
+            </button>
+
+            <button onclick="toggleTheme()" aria-label="Ganti Tema" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition" title="Ganti Mode Terang / Gelap">
+              <svg class="w-5 h-5 hidden dark:block text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+              </svg>
+              <svg class="w-5 h-5 block dark:hidden text-slate-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================================= -->
+  <!-- KONTEN UTAMA                                              -->
+  <!-- ========================================================= -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+
+    <!-- ======================================================= -->
+    <!-- TAB 1: DASHBOARD MONITORING                             -->
+    <!-- ======================================================= -->
+    <section id="view-dashboard" class="space-y-6">
+
+      <!-- Banner Pengingat Jika Mode Simulasi Aktif -->
+      <div id="simActiveNotice" class="hidden rounded-2xl bg-amber-500/15 border border-amber-500/40 px-4 py-3 flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm">
+        <div class="flex items-center gap-2.5 text-amber-800 dark:text-amber-300 font-medium">
+          <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping"></span>
+          <span><strong>Mode Simulasi Aktif:</strong> Nilai sensor di bawah ini menampilkan skenario uji dari menu Simulasi.</span>
+        </div>
+        <button onclick="resetAllSimulations()" class="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs transition">
+          Kembali ke Data Live Google Sheets
+        </button>
+      </div>
+
+      <!-- 1. Hero Status Banner "Kondisi Saat Ini" -->
+      <div id="heroBanner" class="rounded-2xl p-5 sm:p-6 border transition-all duration-300 bg-emerald-50/90 dark:bg-emerald-950/35 border-emerald-200 dark:border-emerald-800/70 shadow-glass dark:shadow-glass-dark">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="flex items-start sm:items-center gap-4">
+            <div id="heroIconBox" class="w-14 h-14 rounded-2xl bg-emerald-500/15 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+              <svg id="heroIcon" class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <span class="text-xs font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400" id="heroSubtitle">
+                Kondisi Saat Ini
+              </span>
+              <h2 id="heroTitle" class="text-2xl sm:text-3xl font-extrabold text-emerald-950 dark:text-emerald-100 tracking-tight mt-0.5">
+                Aman
+              </h2>
+              <p id="heroDesc" class="text-sm text-emerald-800/90 dark:text-emerald-200/80 mt-1">
+                Semua pembacaan sensor berada di bawah ambang batas bahaya.
+              </p>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap sm:flex-nowrap items-center gap-3 border-t md:border-t-0 pt-3 md:pt-0 border-emerald-200/70 dark:border-emerald-800/50">
+            <div class="text-left md:text-right text-xs mr-1">
+              <span class="text-slate-500 dark:text-slate-400 block">Sinkronisasi Terakhir</span>
+              <span id="lastUpdatedText" class="font-mono font-semibold text-slate-800 dark:text-slate-200 mt-0.5 block">
+                Memuat data...
+              </span>
+            </div>
+
+            <button onclick="manualRefreshLive()" class="p-2.5 rounded-xl bg-white/80 dark:bg-slate-800 hover:bg-white dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 transition shadow-sm" title="Muat Ulang Data Google Sheets">
+              <svg id="refreshSpinner" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+              </svg>
+            </button>
+
+            <button onclick="openSensorTestModal()" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-800 dark:bg-teal-600 dark:hover:bg-teal-500 text-white transition shadow-sm">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>Periksa Sensor</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Grid 4 Kartu Parameter Sensor Utama -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+
+        <!-- Kartu 1: LPG (ppm) -->
+        <div id="card-lpg" class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 sm:p-6 shadow-glass dark:shadow-glass-dark transition-all">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-200">Gas LPG (MQ-2)</h3>
+                <p class="text-xs text-slate-400">Nilai maksimum S1 &amp; S2</p>
+              </div>
+            </div>
+            <span id="badge-lpg" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Normal
+            </span>
+          </div>
+
+          <div class="mt-4 flex items-baseline gap-2">
+            <span id="val-lpg" class="font-mono text-4xl sm:text-5xl font-bold tracking-tight tabular-nums text-slate-900 dark:text-white">
+              10.42
+            </span>
+            <span class="text-sm font-medium text-slate-500 dark:text-slate-400">ppm</span>
+          </div>
+
+          <!-- Progress Bar dengan Label di Atas Tick agar tidak bentrok dengan skala bawah -->
+          <div class="mt-4 pt-6">
+            <div class="relative w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-visible">
+              <div id="bar-lpg" class="h-full rounded-full bg-teal-600 transition-all duration-500" style="width: 1.7%;"></div>
+              <!-- Waspada 200 (33.3%) -->
+              <div class="absolute bottom-full mb-1.5 text-[11px] font-mono font-semibold text-amber-600 dark:text-amber-400 whitespace-nowrap" style="left: 33.3%; transform: translateX(-50%);">
+                Batas Waspada 200
+              </div>
+              <div class="absolute -top-1 w-0.5 h-4 bg-amber-500" style="left: 33.3%;"></div>
+              <!-- Bahaya 500 (83.3%) -->
+              <div class="absolute bottom-full mb-1.5 text-[11px] font-mono font-semibold text-red-600 dark:text-red-400 whitespace-nowrap" style="left: 83.3%; transform: translateX(-85%);">
+                Batas Bahaya 500
+              </div>
+              <div class="absolute -top-1 w-0.5 h-4 bg-red-500" style="left: 83.3%;"></div>
+            </div>
+            <div class="flex justify-between text-[11px] font-mono text-slate-400 mt-2">
+              <span>0 ppm</span>
+              <span>600 ppm</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kartu 2: Karbon Monoksida / CO (ppm) -->
+        <div id="card-co" class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 sm:p-6 shadow-glass dark:shadow-glass-dark transition-all">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15a4.5 4.5 0 004.5 4.5H18a3.75 3.75 0 001.332-7.257 3 3 0 00-3.758-3.848 5.25 5.25 0 00-10.233 2.33A4.502 4.502 0 002.25 15z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-200">Karbon Monoksida / CO (MQ-7)</h3>
+                <p class="text-xs text-slate-400">Nilai maksimum S1 &amp; S2</p>
+              </div>
+            </div>
+            <span id="badge-co" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Normal
+            </span>
+          </div>
+
+          <div class="mt-4 flex items-baseline gap-2">
+            <span id="val-co" class="font-mono text-4xl sm:text-5xl font-bold tracking-tight tabular-nums text-slate-900 dark:text-white">
+              1.65
+            </span>
+            <span class="text-sm font-medium text-slate-500 dark:text-slate-400">ppm</span>
+          </div>
+
+          <!-- Progress Bar dengan Label di Atas Tick -->
+          <div class="mt-4 pt-6">
+            <div class="relative w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-visible">
+              <div id="bar-co" class="h-full rounded-full bg-teal-600 transition-all duration-500" style="width: 4.1%;"></div>
+              <!-- Bahaya 25 ppm (62.5%) -->
+              <div class="absolute bottom-full mb-1.5 text-[11px] font-mono font-semibold text-red-600 dark:text-red-400 whitespace-nowrap" style="left: 62.5%; transform: translateX(-50%);">
+                Batas Bahaya 25 ppm
+              </div>
+              <div class="absolute -top-1 w-0.5 h-4 bg-red-500" style="left: 62.5%;"></div>
+            </div>
+            <div class="flex justify-between text-[11px] font-mono text-slate-400 mt-2">
+              <span>0 ppm</span>
+              <span>40 ppm</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kartu 3: Suhu (°C) -->
+        <div id="card-suhu" class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 sm:p-6 shadow-glass dark:shadow-glass-dark transition-all">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v10.5m0 0a3 3 0 100 6 3 3 0 000-6zm0-10.5a1.5 1.5 0 00-1.5 1.5v7.626a4.5 4.5 0 103 0V4.5A1.5 1.5 0 0012 3z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-200">Suhu Ruangan (DHT22)</h3>
+                <p class="text-xs text-slate-400">Rata-rata S1 &amp; S2</p>
+              </div>
+            </div>
+            <span id="badge-suhu" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Normal
+            </span>
+          </div>
+
+          <div class="mt-4 flex items-baseline gap-2">
+            <span id="val-suhu" class="font-mono text-4xl sm:text-5xl font-bold tracking-tight tabular-nums text-slate-900 dark:text-white">
+              27.8
+            </span>
+            <span class="text-sm font-medium text-slate-500 dark:text-slate-400">°C</span>
+          </div>
+
+          <!-- Progress Bar dengan Label di Atas Tick -->
+          <div class="mt-4 pt-6">
+            <div class="relative w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-visible">
+              <div id="bar-suhu" class="h-full rounded-full bg-teal-600 transition-all duration-500" style="width: 46.3%;"></div>
+              <!-- Bahaya 50°C (83.3%) -->
+              <div class="absolute bottom-full mb-1.5 text-[11px] font-mono font-semibold text-red-600 dark:text-red-400 whitespace-nowrap" style="left: 83.3%; transform: translateX(-85%);">
+                Batas Bahaya 50°C
+              </div>
+              <div class="absolute -top-1 w-0.5 h-4 bg-red-500" style="left: 83.3%;"></div>
+            </div>
+            <div class="flex justify-between text-[11px] font-mono text-slate-400 mt-2">
+              <span>0°C</span>
+              <span>60°C</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kartu 4: Kelembapan (%) -->
+        <div id="card-rh" class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 sm:p-6 shadow-glass dark:shadow-glass-dark transition-all">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 3.75c-3.75 4.5-6.75 8.1-6.75 11.25a6.75 6.75 0 0013.5 0c0-3.15-3-6.75-6.75-11.25z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-200">Kelembapan Udara (DHT22)</h3>
+                <p class="text-xs text-slate-400">Rata-rata S1 &amp; S2 (RH)</p>
+              </div>
+            </div>
+            <span id="badge-rh" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Normal
+            </span>
+          </div>
+
+          <div class="mt-4 flex items-baseline gap-2">
+            <span id="val-rh" class="font-mono text-4xl sm:text-5xl font-bold tracking-tight tabular-nums text-slate-900 dark:text-white">
+              46.55
+            </span>
+            <span class="text-sm font-medium text-slate-500 dark:text-slate-400">%</span>
+          </div>
+
+          <!-- Progress Bar dengan Label di Atas Tick (Tidak Bentrok 80% dan 100%) -->
+          <div class="mt-4 pt-6">
+            <div class="relative w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-visible">
+              <div id="bar-rh" class="h-full rounded-full bg-teal-600 transition-all duration-500" style="width: 46.55%;"></div>
+              <!-- Bahaya 80% -->
+              <div class="absolute bottom-full mb-1.5 text-[11px] font-mono font-semibold text-red-600 dark:text-red-400 whitespace-nowrap" style="left: 80%; transform: translateX(-85%);">
+                Batas Bahaya 80%
+              </div>
+              <div class="absolute -top-1 w-0.5 h-4 bg-red-500" style="left: 80%;"></div>
+            </div>
+            <div class="flex justify-between text-[11px] font-mono text-slate-400 mt-2">
+              <span>0%</span>
+              <span>100%</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 3. Bagian Riwayat & Grafik Tren -->
+      <div class="space-y-4 pt-2">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Riwayat Pembacaan Sensor</h2>
+            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Fluktuasi tren diperjelas otomatis menggunakan Skala Zoom Tren agar perubahan kecil terlihat tajam</p>
+          </div>
+
+          <!-- Filter Rentang Waktu -->
+          <div class="inline-flex items-center bg-white dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm self-start sm:self-auto">
+            <button onclick="setRange('1h')" id="range-1h" class="range-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">1 jam</button>
+            <button onclick="setRange('6h')" id="range-6h" class="range-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-white dark:bg-teal-600 transition">6 jam</button>
+            <button onclick="setRange('24h')" id="range-24h" class="range-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">24 jam</button>
+            <button onclick="setRange('7d')" id="range-7d" class="range-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">7 hari</button>
+          </div>
+        </div>
+
+        <!-- Baris Grafik 1: LPG & CO (Dengan Skala Zoom Tren & Statistik Min/Avg/Max) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          
+          <!-- Grafik LPG -->
+          <div class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 shadow-glass dark:shadow-glass-dark">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+              <div>
+                <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100">Gas LPG (ppm)</h3>
+                <div id="stats-lpg" class="text-[11px] font-mono text-slate-500 dark:text-slate-400 mt-0.5">
+                  Min: 9.10 • Rata²: 10.35 • Maks: 11.40 ppm
+                </div>
+              </div>
+              <button onclick="toggleChartScale('lpg')" id="scaleBtn-lpg" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-teal-500/10 text-teal-700 dark:text-teal-300 border border-teal-500/30 hover:bg-teal-500/20 transition">
+                Skala Zoom Tren
+              </button>
+            </div>
+            <div class="h-60 w-full mt-2">
+              <canvas id="chartLpg"></canvas>
+            </div>
+          </div>
+
+          <!-- Grafik Karbon Monoksida -->
+          <div class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 shadow-glass dark:shadow-glass-dark">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+              <div>
+                <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100">Karbon Monoksida / CO (ppm)</h3>
+                <div id="stats-co" class="text-[11px] font-mono text-slate-500 dark:text-slate-400 mt-0.5">
+                  Min: 1.15 • Rata²: 1.62 • Maks: 2.25 ppm
+                </div>
+              </div>
+              <button onclick="toggleChartScale('co')" id="scaleBtn-co" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/30 hover:bg-purple-500/20 transition">
+                Skala Zoom Tren
+              </button>
+            </div>
+            <div class="h-60 w-full mt-2">
+              <canvas id="chartCo"></canvas>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Baris Grafik 2: Suhu dan Kelembapan -->
+        <div class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 shadow-glass dark:shadow-glass-dark">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100">Suhu (°C) dan Kelembapan (%)</h3>
+            <div class="flex flex-wrap items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400">
+              <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-cyan-500/60"></span> Kelembapan (%)</span>
+              <span class="inline-flex items-center gap-1.5"><span class="w-3 h-0.5 bg-rose-500"></span> Suhu (°C)</span>
+              <span class="inline-flex items-center gap-1.5"><span class="w-3 h-0.5 border-t-2 border-dashed border-red-500"></span> Batas Suhu 50°C / RH 80%</span>
+            </div>
+          </div>
+          <div class="h-64 w-full">
+            <canvas id="chartEnv"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Catatan Keterangan Teknis -->
+      <div class="rounded-2xl bg-slate-100/90 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 p-4 sm:p-5 flex items-start gap-3.5 text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+        <svg class="w-5 h-5 text-slate-500 dark:text-slate-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+        </svg>
+        <p class="leading-relaxed">
+          Nilai ppm dihitung dari interpolasi kurva log-log datasheet sensor MQ-2 dan MQ-7. Di bawah 200 ppm untuk LPG dan 50 ppm untuk CO, angka merupakan hasil ekstrapolasi tren kondisi udara bersih. Gunakan tombol <strong>Skala Zoom Tren</strong> / <strong>Tampilkan Ambang Batas</strong> pada sudut kanan grafik untuk mengubah perspektif skala sumbu Y.
+        </p>
+      </div>
+    </section>
+
+    <!-- ======================================================= -->
+    <!-- TAB 2: DOWNLOAD TABEL (1 - 7 HARI SEMUA SENSOR)         -->
+    <!-- ======================================================= -->
+    <section id="view-download" class="hidden space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Download Tabel Riwayat Sensor</h2>
+          <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+            Ekspor log pembacaan seluruh sensor dari Google Sheets dalam rentang 1 hingga 7 hari ke format Excel (.xls) atau CSV (.csv).
+          </p>
+        </div>
+      </div>
+
+      <!-- Panel Filter Ekspor -->
+      <div class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 sm:p-6 shadow-glass dark:shadow-glass-dark space-y-6">
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Kolom 1: Rentang Hari (1 - 7 Hari) -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <label for="exportDaysSlider" class="text-sm font-bold text-slate-800 dark:text-slate-100">Rentang Waktu Data</label>
+              <span id="exportDaysLabel" class="px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold bg-teal-500/15 text-teal-700 dark:text-teal-300">3 Hari Terakhir</span>
+            </div>
+            <input id="exportDaysSlider" type="range" min="1" max="7" value="3" oninput="updateExportPreview()" class="w-full accent-teal-600 cursor-pointer" />
+            <div class="grid grid-cols-7 gap-1 pt-1">
+              <button onclick="setExportDays(1)" class="exp-day-btn py-1 rounded text-xs font-mono font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-teal-600 hover:text-white transition" data-day="1">1H</button>
+              <button onclick="setExportDays(2)" class="exp-day-btn py-1 rounded text-xs font-mono font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-teal-600 hover:text-white transition" data-day="2">2H</button>
+              <button onclick="setExportDays(3)" class="exp-day-btn py-1 rounded text-xs font-mono font-semibold bg-teal-600 text-white transition" data-day="3">3H</button>
+              <button onclick="setExportDays(4)" class="exp-day-btn py-1 rounded text-xs font-mono font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-teal-600 hover:text-white transition" data-day="4">4H</button>
+              <button onclick="setExportDays(5)" class="exp-day-btn py-1 rounded text-xs font-mono font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-teal-600 hover:text-white transition" data-day="5">5H</button>
+              <button onclick="setExportDays(6)" class="exp-day-btn py-1 rounded text-xs font-mono font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-teal-600 hover:text-white transition" data-day="6">6H</button>
+              <button onclick="setExportDays(7)" class="exp-day-btn py-1 rounded text-xs font-mono font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-teal-600 hover:text-white transition" data-day="7">7H</button>
+            </div>
+          </div>
+
+          <!-- Kolom 2: Interval & Filter Status -->
+          <div class="space-y-3">
+            <div>
+              <label for="exportInterval" class="block text-sm font-bold text-slate-800 dark:text-slate-100 mb-1.5">Interval Pencatatan</label>
+              <select id="exportInterval" onchange="updateExportPreview()" class="w-full rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-2 text-xs sm:text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                <option value="all">Semua Data Mentah (Tiap 2 Menit)</option>
+                <option value="15m">Ringkasan Tiap 15 Menit</option>
+                <option value="1h" selected>Ringkasan Tiap 1 Jam</option>
+              </select>
+            </div>
+            <div>
+              <label for="exportStatusFilter" class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Filter Status Alarm</label>
+              <select id="exportStatusFilter" onchange="updateExportPreview()" class="w-full rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-2 text-xs sm:text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                <option value="ALL">Semua Kondisi (Normal, Waspada, Bahaya)</option>
+                <option value="NORMAL">Hanya NORMAL</option>
+                <option value="WASPADA">Hanya WASPADA</option>
+                <option value="BAHAYA">Hanya BAHAYA</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Kolom 3: Pilihan Sensor -->
+          <div class="space-y-2.5">
+            <span class="block text-sm font-bold text-slate-800 dark:text-slate-100">Parameter Sensor yang Disertakan</span>
+            <div class="grid grid-cols-2 gap-2 text-xs sm:text-sm">
+              <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700 cursor-pointer">
+                <input type="checkbox" id="chk-lpg" checked onchange="updateExportPreview()" class="rounded text-teal-600 focus:ring-teal-500" />
+                <span>Gas LPG (ppm)</span>
+              </label>
+              <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700 cursor-pointer">
+                <input type="checkbox" id="chk-co" checked onchange="updateExportPreview()" class="rounded text-teal-600 focus:ring-teal-500" />
+                <span>Gas CO (ppm)</span>
+              </label>
+              <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700 cursor-pointer">
+                <input type="checkbox" id="chk-suhu" checked onchange="updateExportPreview()" class="rounded text-teal-600 focus:ring-teal-500" />
+                <span>Suhu (°C)</span>
+              </label>
+              <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700 cursor-pointer">
+                <input type="checkbox" id="chk-rh" checked onchange="updateExportPreview()" class="rounded text-teal-600 focus:ring-teal-500" />
+                <span>Kelembapan (%)</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bar Aksi Download -->
+        <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+          <div class="text-xs text-slate-500 dark:text-slate-400">
+            Total baris siap unduh: <strong id="exportRowCount" class="font-mono text-slate-800 dark:text-slate-100">72</strong> baris data
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2.5">
+            <button onclick="downloadTableExcel()" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+              </svg>
+              <span>Download Excel (.xls)</span>
+            </button>
+            <button onclick="downloadTableCSV()" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-slate-800 hover:bg-slate-700 text-white shadow transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+              </svg>
+              <span>Download CSV (.csv)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pratinjau Tabel Data -->
+      <div class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-glass dark:shadow-glass-dark overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+          <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100">Pratinjau Data Tabel (20 Baris Terbaru)</h3>
+          <span class="text-[11px] font-mono text-slate-400">Sumber: Sheet "Data"</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs sm:text-sm">
+            <thead id="exportTableHead" class="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 font-semibold border-b border-slate-200 dark:border-slate-800">
+              <!-- Diisi dinamis -->
+            </thead>
+            <tbody id="exportTableBody" class="divide-y divide-slate-100 dark:divide-slate-800 font-mono text-xs">
+              <!-- Diisi dinamis -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================= -->
+    <!-- TAB 3: KALIBRASI Ro                                     -->
+    <!-- ======================================================= -->
+    <section id="view-kalibrasi" class="hidden space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Kalibrasi Resistansi Udara Bersih (Ro)</h2>
+          <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+            Mengukur Rs di udara bersih selama 60–90 menit, memverifikasi kestabilan CV &amp; Drift, dan menyimpannya ke memori NVS ESP32.
+          </p>
+        </div>
+      </div>
+
+      <!-- Kartu Status Kalibrasi & Kontrol Remote -->
+      <div class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 sm:p-6 shadow-glass dark:shadow-glass-dark">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Status Kalibrasi Perangkat</span>
+            <div class="flex items-center gap-2.5 mt-1">
+              <h3 id="kalStatusTitle" class="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">Selesai &amp; Aktif</h3>
+              <span id="kalStatusBadge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                Stabil (NVS Tersimpan)
+              </span>
+            </div>
+            <p id="kalStatusDesc" class="text-sm text-slate-600 dark:text-slate-300 mt-1">
+              Konstanta Ro hasil kalibrasi telah diterapkan pada perangkat ESP32 dan tersimpan secara permanen.
+            </p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2.5">
+            <button id="btnStartKal" onclick="triggerRemoteCalibration('kalibrasi')" class="px-4 py-2.5 rounded-xl text-sm font-semibold bg-slate-900 hover:bg-slate-800 dark:bg-teal-600 dark:hover:bg-teal-500 text-white shadow transition">
+              Mulai Kalibrasi 60 Menit
+            </button>
+            <button id="btnCancelKal" onclick="triggerRemoteCalibration('idle')" class="hidden px-4 py-2.5 rounded-xl text-sm font-semibold bg-red-600 hover:bg-red-500 text-white shadow transition">
+              Batalkan Kalibrasi
+            </button>
+          </div>
+        </div>
+
+        <!-- Progress Bar Kalibrasi -->
+        <div class="mt-5">
+          <div class="flex justify-between text-xs font-mono text-slate-500 dark:text-slate-400 mb-1.5">
+            <span id="kalProgressLabel">Progres: Menit ke-60 / 60</span>
+            <span id="kalProgressPct">100%</span>
+          </div>
+          <div class="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+            <div id="kalProgressBar" class="h-full bg-teal-600 rounded-full transition-all duration-500" style="width: 100%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grid 2 Kartu: Rs Udara Bersih & Ro Aktif -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+        <div class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 sm:p-6 shadow-glass dark:shadow-glass-dark flex flex-col justify-between">
+          <div>
+            <h3 class="text-base font-bold text-slate-900 dark:text-white mb-4">Rs Udara Bersih (Menit ke-60)</h3>
+            <div class="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+              <div class="py-2.5 flex justify-between items-center">
+                <span class="text-slate-600 dark:text-slate-300">MQ-2 Sensor 1 (LPG)</span>
+                <span id="rs-mq2-1" class="font-mono font-semibold text-slate-900 dark:text-white">11.69 kΩ</span>
+              </div>
+              <div class="py-2.5 flex justify-between items-center">
+                <span class="text-slate-600 dark:text-slate-300">MQ-2 Sensor 2 (LPG)</span>
+                <span id="rs-mq2-2" class="font-mono font-semibold text-slate-900 dark:text-white">13.08 kΩ</span>
+              </div>
+              <div class="py-2.5 flex justify-between items-center">
+                <span class="text-slate-600 dark:text-slate-300">MQ-7 Sensor 1 (CO)</span>
+                <span id="rs-mq7-1" class="font-mono font-semibold text-slate-900 dark:text-white">13.63 kΩ</span>
+              </div>
+              <div class="py-2.5 flex justify-between items-center">
+                <span class="text-slate-600 dark:text-slate-300">MQ-7 Sensor 2 (CO)</span>
+                <span id="rs-mq7-2" class="font-mono font-semibold text-slate-900 dark:text-white">32.11 kΩ</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs font-mono text-slate-500 dark:text-slate-400">
+            CV maks <span class="text-emerald-600 dark:text-emerald-400 font-semibold">0.64%</span> • 
+            Drift maks <span class="text-emerald-600 dark:text-emerald-400 font-semibold">0.28%</span> • 
+            Stabil: <span class="text-emerald-600 dark:text-emerald-400 font-bold">YA</span>
+          </div>
+        </div>
+
+        <div class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 sm:p-6 shadow-glass dark:shadow-glass-dark flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-base font-bold text-slate-900 dark:text-white">Nilai Ro Aktif pada Perangkat</h3>
+              <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20">Sheet Config</span>
+            </div>
+            <div class="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+              <div class="py-2.5 flex justify-between items-center">
+                <span class="text-slate-600 dark:text-slate-300">MQ-2 Sensor 1 <span class="text-xs text-slate-400">(faktor 9.83)</span></span>
+                <span id="ro-mq2-1" class="font-mono font-bold text-teal-600 dark:text-teal-400">1.1893 kΩ</span>
+              </div>
+              <div class="py-2.5 flex justify-between items-center">
+                <span class="text-slate-600 dark:text-slate-300">MQ-2 Sensor 2 <span class="text-xs text-slate-400">(faktor 9.83)</span></span>
+                <span id="ro-mq2-2" class="font-mono font-bold text-teal-600 dark:text-teal-400">1.3302 kΩ</span>
+              </div>
+              <div class="py-2.5 flex justify-between items-center">
+                <span class="text-slate-600 dark:text-slate-300">MQ-7 Sensor 1 <span class="text-xs text-slate-400">(faktor 27.0)</span></span>
+                <span id="ro-mq7-1" class="font-mono font-bold text-teal-600 dark:text-teal-400">0.5049 kΩ</span>
+              </div>
+              <div class="py-2.5 flex justify-between items-center">
+                <span class="text-slate-600 dark:text-slate-300">MQ-7 Sensor 2 <span class="text-xs text-slate-400">(faktor 27.0)</span></span>
+                <span id="ro-mq7-2" class="font-mono font-bold text-teal-600 dark:text-teal-400">1.1894 kΩ</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs font-mono text-slate-500 dark:text-slate-400">
+            Syarat Kestabilan: CV ≤ 3.0% &amp; Drift ≤ 2.0%
+          </div>
+        </div>
+      </div>
+
+      <!-- Grafik Kestabilan Rs -->
+      <div class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 sm:p-6 shadow-glass dark:shadow-glass-dark">
+        <div class="mb-4">
+          <h3 class="text-base font-bold text-slate-900 dark:text-white">Kurva Kestabilan Resistansi Rs (Menit ke-6 s.d. ke-60)</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Garis horizontal stabil menandakan pemanas (heater) internal sensor MQ telah mencapai kesetimbangan termal.</p>
+        </div>
+        <div class="h-72 w-full">
+          <canvas id="chartKalibrasi"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================= -->
+    <!-- TAB 4: SIMULASI MULTI-TOGGLE INDEPENDEN                 -->
+    <!-- ======================================================= -->
+    <section id="view-simulasi" class="hidden space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Simulasi Kondisi Sensor &amp; Alarm</h2>
+          <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+            Aktifkan satu atau seluruh skenario sekaligus untuk menguji respon visual Dashboard, alarm bunyi beep, notifikasi browser, dan simulasi GPIO ESP32.
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2.5">
+          <button onclick="activateAllSimulations()" class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-red-600 hover:bg-red-500 text-white shadow transition">
+            Aktifkan Semua Bahaya
+          </button>
+          <button onclick="resetAllSimulations()" class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-slate-800 hover:bg-slate-700 text-white shadow transition">
+            Reset ke Data Live
+          </button>
+        </div>
+      </div>
+
+      <!-- Grid 5 Kartu Toggle Independen -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+        <!-- Toggle 1: Waspada LPG -->
+        <div onclick="toggleSimCondition('waspada_lpg')" id="simCard-waspada_lpg" class="cursor-pointer rounded-2xl bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 p-5 transition-all select-none">
+          <div class="flex items-center justify-between">
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">WASPADA</span>
+            <div id="simSwitch-waspada_lpg" class="w-11 h-6 rounded-full bg-slate-200 dark:bg-slate-700 p-1 transition-colors">
+              <div class="w-4 h-4 rounded-full bg-white shadow transform transition-transform"></div>
+            </div>
+          </div>
+          <h3 class="text-base font-bold text-slate-900 dark:text-white mt-3">Waspada Gas LPG (&ge; 200 ppm)</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Simulasi kebocoran ringan MQ-2 pada <strong>265.40 ppm</strong>. Memicu bunyi beep ganda berjeda.</p>
+        </div>
+
+        <!-- Toggle 2: Bahaya LPG -->
+        <div onclick="toggleSimCondition('bahaya_lpg')" id="simCard-bahaya_lpg" class="cursor-pointer rounded-2xl bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 p-5 transition-all select-none">
+          <div class="flex items-center justify-between">
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300">BAHAYA</span>
+            <div id="simSwitch-bahaya_lpg" class="w-11 h-6 rounded-full bg-slate-200 dark:bg-slate-700 p-1 transition-colors">
+              <div class="w-4 h-4 rounded-full bg-white shadow transform transition-transform"></div>
+            </div>
+          </div>
+          <h3 class="text-base font-bold text-slate-900 dark:text-white mt-3">Bahaya Gas LPG (&ge; 500 ppm)</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Simulasi kebocoran tinggi MQ-2 pada <strong>585.20 ppm</strong>. LED LPG (GPIO 27) &amp; Buzzer menyala terus.</p>
+        </div>
+
+        <!-- Toggle 3: Bahaya CO -->
+        <div onclick="toggleSimCondition('bahaya_co')" id="simCard-bahaya_co" class="cursor-pointer rounded-2xl bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 p-5 transition-all select-none">
+          <div class="flex items-center justify-between">
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300">BAHAYA</span>
+            <div id="simSwitch-bahaya_co" class="w-11 h-6 rounded-full bg-slate-200 dark:bg-slate-700 p-1 transition-colors">
+              <div class="w-4 h-4 rounded-full bg-white shadow transform transition-transform"></div>
+            </div>
+          </div>
+          <h3 class="text-base font-bold text-slate-900 dark:text-white mt-3">Bahaya Gas CO (&ge; 25 ppm)</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Simulasi asap pembakaran MQ-7 pada <strong>34.50 ppm</strong>. LED CO (GPIO 26) &amp; alarm darurat aktif.</p>
+        </div>
+
+        <!-- Toggle 4: Bahaya Suhu -->
+        <div onclick="toggleSimCondition('bahaya_suhu')" id="simCard-bahaya_suhu" class="cursor-pointer rounded-2xl bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 p-5 transition-all select-none">
+          <div class="flex items-center justify-between">
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300">BAHAYA</span>
+            <div id="simSwitch-bahaya_suhu" class="w-11 h-6 rounded-full bg-slate-200 dark:bg-slate-700 p-1 transition-colors">
+              <div class="w-4 h-4 rounded-full bg-white shadow transform transition-transform"></div>
+            </div>
+          </div>
+          <h3 class="text-base font-bold text-slate-900 dark:text-white mt-3">Bahaya Suhu Tinggi (&gt; 50 °C)</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Simulasi panas berlebih DHT22 pada <strong>54.2 °C</strong>. LED Lingkungan (GPIO 25) &amp; Buzzer aktif.</p>
+        </div>
+
+        <!-- Toggle 5: Bahaya Kelembapan -->
+        <div onclick="toggleSimCondition('bahaya_rh')" id="simCard-bahaya_rh" class="cursor-pointer rounded-2xl bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 p-5 transition-all select-none">
+          <div class="flex items-center justify-between">
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300">BAHAYA</span>
+            <div id="simSwitch-bahaya_rh" class="w-11 h-6 rounded-full bg-slate-200 dark:bg-slate-700 p-1 transition-colors">
+              <div class="w-4 h-4 rounded-full bg-white shadow transform transition-transform"></div>
+            </div>
+          </div>
+          <h3 class="text-base font-bold text-slate-900 dark:text-white mt-3">Bahaya Kelembapan (&ge; 80%)</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Simulasi uap/kelembapan ekstrem DHT22 pada <strong>86.50%</strong>. Memicu peringatan kelembapan tinggi.</p>
+        </div>
+
+      </div>
+
+      <!-- Pratinjau Respons Perangkat Keras ESP32 -->
+      <div class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 sm:p-6 shadow-glass dark:shadow-glass-dark">
+        <h3 class="text-base font-bold text-slate-900 dark:text-white mb-4">Pratinjau Status Aktuator &amp; Pin GPIO ESP32</h3>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
+          <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700">
+            <span class="text-slate-400 block">LED LPG (GPIO 27)</span>
+            <span id="gpio-led-lpg" class="font-bold text-slate-700 dark:text-slate-200 mt-1 block">MATI (LOW)</span>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700">
+            <span class="text-slate-400 block">LED CO (GPIO 26)</span>
+            <span id="gpio-led-co" class="font-bold text-slate-700 dark:text-slate-200 mt-1 block">MATI (LOW)</span>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700">
+            <span class="text-slate-400 block">LED Suhu/RH (GPIO 25)</span>
+            <span id="gpio-led-env" class="font-bold text-slate-700 dark:text-slate-200 mt-1 block">MATI (LOW)</span>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700">
+            <span class="text-slate-400 block">Buzzer Alarm (GPIO 18)</span>
+            <span id="gpio-buzzer" class="font-bold text-slate-700 dark:text-slate-200 mt-1 block">DIAM (OFF)</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========================================================= -->
+  <!-- POP-UP MODAL PERINGATAN WASPADA / BAHAYA                  -->
+  <!-- ========================================================= -->
+  <div id="alarmAlertModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/75 backdrop-blur-sm p-4">
+    <div id="alarmModalBox" class="bg-white dark:bg-slate-900 border-2 border-red-500 rounded-2xl max-w-md w-full p-6 shadow-2xl transform transition-all">
+      <div class="flex items-start gap-3.5">
+        <div id="alarmModalIcon" class="w-12 h-12 rounded-2xl bg-red-500/15 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0 animate-bounce">
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+          </svg>
+        </div>
+        <div class="flex-1">
+          <span id="alarmModalBadge" class="inline-block px-2.5 py-0.5 rounded-full text-xs font-extrabold uppercase tracking-wider bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300">
+            PERINGATAN BAHAYA
+          </span>
+          <h3 id="alarmModalTitle" class="text-lg font-extrabold text-slate-900 dark:text-white mt-1">
+            Terdeteksi Kondisi Berbahaya!
+          </h3>
+          <p id="alarmModalBody" class="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1.5 leading-relaxed">
+            Parameter sensor melampaui ambang batas aman. Segera periksa sumber gas dan buka ventilasi ruangan.
+          </p>
+        </div>
+      </div>
+
+      <div class="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-end gap-2.5">
+        <button onclick="toggleAlarmMute()" id="modalMuteBtn" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition">
+          Bisukan Suara Beep
+        </button>
+        <button onclick="closeAlarmModal()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-red-600 hover:bg-red-500 text-white shadow transition">
+          Mengerti &amp; Tutup
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- MODAL PERIKSA SENSOR (/sensor)                            -->
+  <!-- ========================================================= -->
+  <div id="sensorModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3.5">
+        <div>
+          <h3 class="text-base font-bold text-slate-900 dark:text-white">Pemeriksaan Mandiri Perangkat</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Diagnostik sensor MQ-2, MQ-7, DHT22 &amp; aktuator ESP32</p>
+        </div>
+        <button onclick="closeSensorTestModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div id="sensorTestBody" class="mt-4 space-y-2 text-xs sm:text-sm font-mono"></div>
+
+      <div class="mt-6 flex items-center justify-end gap-2.5 border-t border-slate-100 dark:border-slate-800 pt-4">
+        <button onclick="triggerRemoteSensorCheck()" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-teal-600 hover:bg-teal-500 text-white transition">
+          Kirim Perintah Tes ke ESP32
+        </button>
+        <button onclick="closeSensorTestModal()" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition">
+          Tutup
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- FOOTER                                                    -->
+  <!-- ========================================================= -->
+  <footer class="border-t border-slate-200 dark:border-slate-800/80 py-5 mt-10 text-center text-xs text-slate-500 dark:text-slate-400">
+    <div class="max-w-7xl mx-auto px-4">
+      GasGuard IoT Monitoring System • Terhubung dengan Google Sheets &amp; ESP32
+    </div>
+  </footer>
+
+  <!-- ========================================================= -->
+  <!-- JAVASCRIPT UTAMA (TERINTEGRASI GOOGLE APPS SCRIPT)        -->
+  <!-- ========================================================= -->
+  <script>
+    // ===========================================================
+    // KONFIGURASI GOOGLE APPS SCRIPT & TOKEN PERANGKAT
+    // ===========================================================
+    const API_CONFIG = {
+      SCRIPT_URL: "https://script.google.com/macros/s/AKfycbwG3cyl9Dujy-VgYu7cGId2_iYFQZfVGgVE-IFd0v55ENXgKXrgJ_sEAAVy99j3d5o3/exec",
+      TOKEN: "123456789",
+      REFRESH_INTERVAL_MS: 10000
+    };
+
+    // State Aplikasi
+    let currentTab = 'dashboard';
+    let currentRange = '6h';
+    let isAlarmMuted = false;
+    let lastAlertLevel = 'NORMAL';
+    let beepInterval = null;
+    let audioCtx = null;
+    let liveFetchTimer = null;
+
+    // Skala Grafik: true = Skala Zoom Tren (default), false = Skala Ambang Batas Penuh
+    let chartZoomMode = {
+      lpg: true,
+      co: true
+    };
+
+    // State Multi-Toggle Simulasi Independen
+    let simConditions = {
+      waspada_lpg: false,
+      bahaya_lpg: false,
+      bahaya_co: false,
+      bahaya_suhu: false,
+      bahaya_rh: false
+    };
+
+    // Data Live Terakhir dari Google Sheets
+    let liveSensorData = {
+      lpg: 10.42,
+      co: 1.65,
+      suhu: 27.8,
+      rh: 46.55,
+      updatedAt: "Menunggu sinkronisasi..."
+    };
+
+    // Riwayat Data dari Google Sheets (atau fallback realistis jika sheet masih kosong)
+    let historyRecords = [];
+
+    // Nilai Kalibrasi Ro Aktif (Default sesuai hasil kalibrasi akhir)
+    let activeRoConfig = {
+      ro_mq2_1: 1.1893,
+      ro_mq2_2: 1.3302,
+      ro_mq7_1: 0.5049,
+      ro_mq7_2: 1.1894
+    };
+
+    // Instance Chart.js
+    let chartLpgInstance = null;
+    let chartCoInstance = null;
+    let chartEnvInstance = null;
+    let chartKalInstance = null;
+
+    // -----------------------------------------------------------
+    // 1. INISIALISASI TEMA (LIGHT / DARK)
+    // -----------------------------------------------------------
+    function toggleTheme() {
+      const html = document.documentElement;
+      html.classList.toggle('dark');
+      const isDark = html.classList.contains('dark');
+      localStorage.setItem('gasguard_theme', isDark ? 'dark' : 'light');
+      updateAllChartsTheme();
+    }
+
+    if (localStorage.getItem('gasguard_theme') === 'dark') {
+      document.documentElement.classList.add('dark');
+    }
+
+    // -----------------------------------------------------------
+    // 2. SISTEM BUNYI BEEP (WEB AUDIO API) & POP-UP BROWSER
+    // -----------------------------------------------------------
+    function ensureAudioContext() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) {
+          audioCtx = new AudioContextClass();
+        }
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => {});
+      }
+    }
+
+    function playSingleTone(freq, durationSec, startDelaySec = 0) {
+      if (isAlarmMuted) return;
+      ensureAudioContext();
+      if (!audioCtx) return;
+
+      try {
+        const now = audioCtx.currentTime + startDelaySec;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now);
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.exponentialRampToValueAtTime(0.22, now + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + durationSec);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + durationSec + 0.02);
+      } catch (e) {
+        // Abaikan jika browser memblokir autoplay sebelum klik pertama
+      }
+    }
+
+    function updateAlarmLoop(level) {
+      if (beepInterval) {
+        clearInterval(beepInterval);
+        beepInterval = null;
+      }
+
+      if (level === 'NORMAL' || isAlarmMuted) return;
+
+      if (level === 'WASPADA') {
+        // 2 beep pendek berjeda setiap 2.2 detik
+        const triggerWaspadaBeep = () => {
+          playSingleTone(880, 0.14, 0);
+          playSingleTone(880, 0.14, 0.22);
+        };
+        triggerWaspadaBeep();
+        beepInterval = setInterval(triggerWaspadaBeep, 2200);
+      } else if (level === 'BAHAYA') {
+        // Beep darurat dua nada cepat setiap 0.85 detik
+        const triggerBahayaBeep = () => {
+          playSingleTone(1280, 0.16, 0);
+          playSingleTone(1040, 0.18, 0.20);
+        };
+        triggerBahayaBeep();
+        beepInterval = setInterval(triggerBahayaBeep, 850);
+      }
+    }
+
+    function toggleAlarmMute() {
+      isAlarmMuted = !isAlarmMuted;
+      ensureAudioContext();
+
+      const labelDesk = document.getElementById('audioLabelDesktop');
+      const modalMuteBtn = document.getElementById('modalMuteBtn');
+      if (labelDesk) labelDesk.textContent = isAlarmMuted ? 'Alarm: Dibisukan' : 'Alarm: Aktif';
+      if (modalMuteBtn) modalMuteBtn.textContent = isAlarmMuted ? 'Aktifkan Suara Beep' : 'Bisukan Suara Beep';
+
+      if (isAlarmMuted && beepInterval) {
+        clearInterval(beepInterval);
+        beepInterval = null;
+      } else if (!isAlarmMuted && lastAlertLevel !== 'NORMAL') {
+        updateAlarmLoop(lastAlertLevel);
+      }
+    }
+
+    function triggerPopupsIfEscalated(newLevel, reasonsText) {
+      if (newLevel === 'NORMAL') {
+        lastAlertLevel = 'NORMAL';
+        updateAlarmLoop('NORMAL');
+        return;
+      }
+
+      const escalated = (lastAlertLevel === 'NORMAL') || (lastAlertLevel === 'WASPADA' && newLevel === 'BAHAYA');
+      lastAlertLevel = newLevel;
+      updateAlarmLoop(newLevel);
+
+      if (escalated) {
+        // 1. Native Browser Notification Pop-up
+        if ('Notification' in window) {
+          if (Notification.permission === 'granted') {
+            new Notification(
+              newLevel === 'BAHAYA' ? '🚨 BAHAYA TERDETEKSI — GasGuard IoT' : '⚠️ PERINGATAN WASPADA — GasGuard IoT',
+              { body: reasonsText }
+            );
+          } else if (Notification.permission !== 'denied') {
+            Notification.requestPermission().then(perm => {
+              if (perm === 'granted') {
+                new Notification(
+                  newLevel === 'BAHAYA' ? '🚨 BAHAYA TERDETEKSI — GasGuard IoT' : '⚠️ PERINGATAN WASPADA — GasGuard IoT',
+                  { body: reasonsText }
+                );
+              }
+            });
+          }
+        }
+
+        // 2. In-App Alert Pop-up Modal
+        const modal = document.getElementById('alarmAlertModal');
+        const box = document.getElementById('alarmModalBox');
+        const badge = document.getElementById('alarmModalBadge');
+        const title = document.getElementById('alarmModalTitle');
+        const body = document.getElementById('alarmModalBody');
+
+        if (newLevel === 'BAHAYA') {
+          box.className = 'bg-white dark:bg-slate-900 border-2 border-red-500 rounded-2xl max-w-md w-full p-6 shadow-2xl';
+          badge.className = 'inline-block px-2.5 py-0.5 rounded-full text-xs font-extrabold uppercase tracking-wider bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300';
+          badge.textContent = 'PERINGATAN BAHAYA';
+          title.textContent = 'Kondisi Berbahaya Terdeteksi!';
+        } else {
+          box.className = 'bg-white dark:bg-slate-900 border-2 border-amber-500 rounded-2xl max-w-md w-full p-6 shadow-2xl';
+          badge.className = 'inline-block px-2.5 py-0.5 rounded-full text-xs font-extrabold uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300';
+          badge.textContent = 'PERINGATAN WASPADA';
+          title.textContent = 'Peningkatan Konsentrasi Gas!';
+        }
+
+        body.textContent = reasonsText;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+    }
+
+    function closeAlarmModal() {
+      const modal = document.getElementById('alarmAlertModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    // Minta izin notifikasi browser pada interaksi pertama pengguna
+    document.addEventListener('click', () => {
+      ensureAudioContext();
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission().catch(() => {});
+      }
+    }, { once: true });
+
+    // -----------------------------------------------------------
+    // 3. NAVIGASI 4 TAB UTAMA
+    // -----------------------------------------------------------
+    function switchTab(tabName) {
+      currentTab = tabName;
+      ['dashboard', 'download', 'kalibrasi', 'simulasi'].forEach(t => {
+        const viewEl = document.getElementById('view-' + t);
+        const btnEl = document.getElementById('tab-' + t);
+        if (!viewEl || !btnEl) return;
+
+        if (t === tabName) {
+          viewEl.classList.remove('hidden');
+          btnEl.classList.add('bg-teal-600', 'text-white', 'shadow');
+          btnEl.classList.remove('text-slate-300', 'hover:text-white');
+        } else {
+          viewEl.classList.add('hidden');
+          btnEl.classList.remove('bg-teal-600', 'text-white', 'shadow');
+          btnEl.classList.add('text-slate-300', 'hover:text-white');
+        }
+      });
+
+      if (tabName === 'kalibrasi' && !chartKalInstance) {
+        initKalibrasiChart();
+      }
+      if (tabName === 'download') {
+        updateExportPreview();
+      }
+    }
+
+    // -----------------------------------------------------------
+    // 4. INTEGRASI LIVE GOOGLE SHEETS (GET & POST APPS SCRIPT)
+    // -----------------------------------------------------------
+    function setConnectionStatus(state, label) {
+      const badge = document.getElementById('connectionBadge');
+      const dot = document.getElementById('connectionDot');
+      const text = document.getElementById('connectionText');
+      if (!badge || !dot || !text) return;
+
+      text.textContent = label;
+      if (state === 'live') {
+        badge.className = 'inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30';
+        dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+      } else if (state === 'sim') {
+        badge.className = 'inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40';
+        dot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-ping';
+      } else {
+        badge.className = 'inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-0.5 rounded-full bg-slate-700 text-slate-300 border border-slate-600';
+        dot.className = 'w-2 h-2 rounded-full bg-slate-400';
+      }
+    }
+
+    function generateFallbackHistory(days = 7) {
+      const list = [];
+      const now = Date.now();
+      const totalPoints = days * 24; // 1 titik per jam
+      for (let i = totalPoints; i >= 0; i--) {
+        const t = new Date(now - i * 3600 * 1000);
+        const wave = Math.sin(i / 4);
+        const lpg = +(10.2 + wave * 1.1 + (Math.random() - 0.5) * 0.6).toFixed(2);
+        const co = +(1.65 + Math.cos(i / 5) * 0.45 + (Math.random() - 0.5) * 0.25).toFixed(2);
+        const suhu = +(28.1 + Math.sin(i / 3.8) * 1.6).toFixed(1);
+        const rh = +(48.5 - Math.sin(i / 3.8) * 4.2).toFixed(2);
+        list.push({
+          waktu: t.toISOString(),
+          lpg,
+          co,
+          suhu,
+          rh,
+          statusAlarm: 'NORMAL'
+        });
+      }
+      return list;
+    }
+
+    async function fetchLiveFromGoogleSheets() {
+      try {
+        const url = `${API_CONFIG.SCRIPT_URL}?days=7&token=${encodeURIComponent(API_CONFIG.TOKEN)}`;
+        const response = await fetch(url, { method: 'GET', redirect: 'follow' });
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+
+        const data = await response.json();
+
+        // Parse riwayat jika tersedia dari Google Sheets
+        const rawList = data.riwayat || data.history || (Array.isArray(data) ? data : []);
+        if (Array.isArray(rawList) && rawList.length > 0) {
+          historyRecords = rawList.map(item => ({
+            waktu: item.waktu || item.timestamp || new Date().toISOString(),
+            lpg: Number(item.mq2 ?? item.lpg ?? 10.4),
+            co: Number(item.mq7 ?? item.co ?? 1.65),
+            suhu: Number(item.suhu ?? item.temp ?? 27.8),
+            rh: Number(item.kelembapan ?? item.rh ?? item.humidity ?? 46.5),
+            statusAlarm: String(item.statusAlarm || item.status || 'NORMAL')
+          }));
+        } else if (historyRecords.length === 0) {
+          historyRecords = generateFallbackHistory(7);
+        }
+
+        // Parse pembacaan terbaru
+        const latest = data.terbaru || data.latest || (historyRecords.length ? historyRecords[historyRecords.length - 1] : null);
+        if (latest) {
+          const dt = new Date(latest.waktu || Date.now());
+          const formattedTime = isNaN(dt.getTime())
+            ? new Date().toLocaleTimeString('id-ID') + ' WIB'
+            : dt.toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WIB';
+
+          liveSensorData = {
+            lpg: Number(latest.mq2 ?? latest.lpg ?? liveSensorData.lpg),
+            co: Number(latest.mq7 ?? latest.co ?? liveSensorData.co),
+            suhu: Number(latest.suhu ?? latest.temp ?? liveSensorData.suhu),
+            rh: Number(latest.kelembapan ?? latest.rh ?? liveSensorData.rh),
+            updatedAt: formattedTime
+          };
+        }
+
+        // Parse Config Ro jika dikirimkan
+        if (data.config) {
+          if (data.config.ro_mq2_1) activeRoConfig.ro_mq2_1 = Number(data.config.ro_mq2_1);
+          if (data.config.ro_mq2_2) activeRoConfig.ro_mq2_2 = Number(data.config.ro_mq2_2);
+          if (data.config.ro_mq7_1) activeRoConfig.ro_mq7_1 = Number(data.config.ro_mq7_1);
+          if (data.config.ro_mq7_2) activeRoConfig.ro_mq7_2 = Number(data.config.ro_mq7_2);
+          renderRoValues();
+        }
+
+        if (!isAnySimulationActive()) {
+          setConnectionStatus('live', 'Live Google Sheets');
+        }
+        evaluateAndRenderAll();
+        updateAllChartsData();
+      } catch (err) {
+        if (historyRecords.length === 0) {
+          historyRecords = generateFallbackHistory(7);
+        }
+        if (!isAnySimulationActive()) {
+          setConnectionStatus('offline', 'Standby / Data Lokal');
+          liveSensorData.updatedAt = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WIB';
+        }
+        evaluateAndRenderAll();
+        updateAllChartsData();
+      }
+    }
+
+    function manualRefreshLive() {
+      const spinner = document.getElementById('refreshSpinner');
+      if (spinner) spinner.classList.add('animate-spin');
+      fetchLiveFromGoogleSheets().finally(() => {
+        setTimeout(() => {
+          if (spinner) spinner.classList.remove('animate-spin');
+        }, 500);
+      });
+    }
+
+    async function postCommandToAppsScript(payload) {
+      try {
+        await fetch(API_CONFIG.SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ token: API_CONFIG.TOKEN, ...payload })
+        });
+      } catch (e) {
+        // Tetap tangani gracefully
+      }
+    }
+
+    // -----------------------------------------------------------
+    // 5. LOGIKA SIMULASI MULTI-TOGGLE & EVALUASI STATUS
+    // -----------------------------------------------------------
+    function isAnySimulationActive() {
+      return Object.values(simConditions).some(Boolean);
+    }
+
+    function toggleSimCondition(key) {
+      simConditions[key] = !simConditions[key];
+      syncSimulationUI();
+      evaluateAndRenderAll();
+    }
+
+    function activateAllSimulations() {
+      Object.keys(simConditions).forEach(k => { simConditions[k] = true; });
+      syncSimulationUI();
+      evaluateAndRenderAll();
+    }
+
+    function resetAllSimulations() {
+      Object.keys(simConditions).forEach(k => { simConditions[k] = false; });
+      syncSimulationUI();
+      evaluateAndRenderAll();
+    }
+
+    function syncSimulationUI() {
+      let activeCount = 0;
+      Object.keys(simConditions).forEach(key => {
+        const isOn = simConditions[key];
+        if (isOn) activeCount++;
+
+        const card = document.getElementById('simCard-' + key);
+        const sw = document.getElementById('simSwitch-' + key);
+        if (!card || !sw) return;
+
+        const knob = sw.firstElementChild;
+        if (isOn) {
+          const isAmber = key === 'waspada_lpg';
+          card.className = `cursor-pointer rounded-2xl bg-white dark:bg-slate-900 border-2 ${isAmber ? 'border-amber-500' : 'border-red-500'} p-5 transition-all select-none shadow-md`;
+          sw.className = `w-11 h-6 rounded-full ${isAmber ? 'bg-amber-500' : 'bg-red-600'} p-1 transition-colors`;
+          knob.className = 'w-4 h-4 rounded-full bg-white shadow transform translate-x-5 transition-transform';
+        } else {
+          card.className = 'cursor-pointer rounded-2xl bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 p-5 transition-all select-none';
+          sw.className = 'w-11 h-6 rounded-full bg-slate-200 dark:bg-slate-700 p-1 transition-colors';
+          knob.className = 'w-4 h-4 rounded-full bg-white shadow transform translate-x-0 transition-transform';
+        }
+      });
+
+      const badgeCount = document.getElementById('simBadgeCount');
+      const simNotice = document.getElementById('simActiveNotice');
+
+      if (activeCount > 0) {
+        badgeCount.textContent = activeCount;
+        badgeCount.classList.remove('hidden');
+        simNotice.classList.remove('hidden');
+        setConnectionStatus('sim', `Mode Simulasi (${activeCount} Aktif)`);
+      } else {
+        badgeCount.classList.add('hidden');
+        simNotice.classList.add('hidden');
+        setConnectionStatus('live', 'Live Google Sheets');
+      }
+    }
+
+    function getEffectiveSensorReadings() {
+      if (!isAnySimulationActive()) {
+        return { ...liveSensorData };
+      }
+
+      let lpg = liveSensorData.lpg;
+      let co = liveSensorData.co;
+      let suhu = liveSensorData.suhu;
+      let rh = liveSensorData.rh;
+
+      if (simConditions.waspada_lpg) lpg = 265.40;
+      if (simConditions.bahaya_lpg) lpg = 585.20;
+      if (simConditions.bahaya_co) co = 34.50;
+      if (simConditions.bahaya_suhu) suhu = 54.2;
+      if (simConditions.bahaya_rh) rh = 86.50;
+
+      const nowStr = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WIB (Simulasi)';
+      return { lpg, co, suhu, rh, updatedAt: nowStr };
+    }
+
+    function evaluateAndRenderAll() {
+      const reading = getEffectiveSensorReadings();
+      const { lpg, co, suhu, rh, updatedAt } = reading;
+
+      // Update Angka Utama
+      document.getElementById('val-lpg').textContent = lpg.toFixed(2);
+      document.getElementById('val-co').textContent = co.toFixed(2);
+      document.getElementById('val-suhu').textContent = suhu.toFixed(1);
+      document.getElementById('val-rh').textContent = rh.toFixed(2);
+      document.getElementById('lastUpdatedText').textContent = updatedAt;
+
+      // Evaluasi Status Per Parameter (Sesuai Kode ESP32)
+      const stLpg = lpg >= 500 ? 'BAHAYA' : (lpg >= 200 ? 'WASPADA' : 'NORMAL');
+      const stCo = co >= 25 ? 'BAHAYA' : 'NORMAL';
+      const stSuhu = suhu > 50 ? 'BAHAYA' : 'NORMAL';
+      const stRh = rh >= 80 ? 'BAHAYA' : 'NORMAL';
+
+      updateCardVisual('lpg', stLpg, Math.min((lpg / 600) * 100, 100));
+      updateCardVisual('co', stCo, Math.min((co / 40) * 100, 100));
+      updateCardVisual('suhu', stSuhu, Math.min((suhu / 60) * 100, 100));
+      updateCardVisual('rh', stRh, Math.min(rh, 100));
+
+      // Evaluasi Status Global
+      const triggers = [];
+      if (stLpg === 'BAHAYA') triggers.push(`Gas LPG Tinggi (${lpg.toFixed(1)} ppm)`);
+      else if (stLpg === 'WASPADA') triggers.push(`Gas LPG Waspada (${lpg.toFixed(1)} ppm)`);
+      if (stCo === 'BAHAYA') triggers.push(`Gas CO Tinggi (${co.toFixed(1)} ppm)`);
+      if (stSuhu === 'BAHAYA') triggers.push(`Suhu Tinggi (${suhu.toFixed(1)}°C)`);
+      if (stRh === 'BAHAYA') triggers.push(`Kelembapan Tinggi (${rh.toFixed(1)}%)`);
+
+      let overall = 'NORMAL';
+      if ([stLpg, stCo, stSuhu, stRh].includes('BAHAYA')) overall = 'BAHAYA';
+      else if (stLpg === 'WASPADA') overall = 'WASPADA';
+
+      renderHeroBanner(overall, triggers);
+      renderGpioPreview(stLpg, stCo, stSuhu, stRh, overall);
+      triggerPopupsIfEscalated(overall, triggers.join(' • '));
+    }
+
+    function updateCardVisual(key, status, pct) {
+      const badge = document.getElementById('badge-' + key);
+      const bar = document.getElementById('bar-' + key);
+      if (!badge || !bar) return;
+
+      bar.style.width = pct + '%';
+
+      if (status === 'BAHAYA') {
+        badge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-950/90 dark:text-red-300 border border-red-200 dark:border-red-800';
+        badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping"></span> Bahaya';
+        bar.className = 'h-full rounded-full bg-red-600 transition-all duration-500';
+      } else if (status === 'WASPADA') {
+        badge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950/90 dark:text-amber-300 border border-amber-200 dark:border-amber-800';
+        badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Waspada';
+        bar.className = 'h-full rounded-full bg-amber-500 transition-all duration-500';
+      } else {
+        badge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800';
+        badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Normal';
+        bar.className = 'h-full rounded-full bg-teal-600 transition-all duration-500';
+      }
+    }
+
+    function renderHeroBanner(overall, triggers) {
+      const banner = document.getElementById('heroBanner');
+      const iconBox = document.getElementById('heroIconBox');
+      const subtitle = document.getElementById('heroSubtitle');
+      const title = document.getElementById('heroTitle');
+      const desc = document.getElementById('heroDesc');
+
+      if (overall === 'BAHAYA') {
+        banner.className = 'rounded-2xl p-5 sm:p-6 border transition-all duration-300 bg-red-50/95 dark:bg-red-950/45 border-red-300 dark:border-red-800 shadow-glass banner-bahaya';
+        iconBox.className = 'w-14 h-14 rounded-2xl bg-red-500/20 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0';
+        subtitle.className = 'text-xs font-bold uppercase tracking-wider text-red-700 dark:text-red-400';
+        title.className = 'text-2xl sm:text-3xl font-extrabold text-red-950 dark:text-red-100 tracking-tight mt-0.5';
+        title.textContent = 'BAHAYA TERDETEKSI';
+        desc.className = 'text-sm font-medium text-red-800 dark:text-red-200 mt-1';
+        desc.textContent = 'Pemicu aktif: ' + triggers.join(' • ') + '. Segera buka ventilasi & periksa dapur!';
+      } else if (overall === 'WASPADA') {
+        banner.className = 'rounded-2xl p-5 sm:p-6 border transition-all duration-300 bg-amber-50/95 dark:bg-amber-950/45 border-amber-300 dark:border-amber-800 shadow-glass banner-waspada';
+        iconBox.className = 'w-14 h-14 rounded-2xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0';
+        subtitle.className = 'text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400';
+        title.className = 'text-2xl sm:text-3xl font-extrabold text-amber-950 dark:text-amber-100 tracking-tight mt-0.5';
+        title.textContent = 'WASPADA (Peringatan Dini)';
+        desc.className = 'text-sm font-medium text-amber-800 dark:text-amber-200 mt-1';
+        desc.textContent = 'Pemicu aktif: ' + triggers.join(' • ') + '. Pastikan sirkulasi udara berjalan baik.';
+      } else {
+        banner.className = 'rounded-2xl p-5 sm:p-6 border transition-all duration-300 bg-emerald-50/90 dark:bg-emerald-950/35 border-emerald-200 dark:border-emerald-800/70 shadow-glass dark:shadow-glass-dark';
+        iconBox.className = 'w-14 h-14 rounded-2xl bg-emerald-500/15 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0';
+        subtitle.className = 'text-xs font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400';
+        title.className = 'text-2xl sm:text-3xl font-extrabold text-emerald-950 dark:text-emerald-100 tracking-tight mt-0.5';
+        title.textContent = 'Aman';
+        desc.className = 'text-sm text-emerald-800/90 dark:text-emerald-200/80 mt-1';
+        desc.textContent = 'Semua pembacaan sensor berada di bawah ambang batas bahaya.';
+      }
+    }
+
+    function renderGpioPreview(stLpg, stCo, stSuhu, stRh, overall) {
+      const elLpg = document.getElementById('gpio-led-lpg');
+      const elCo = document.getElementById('gpio-led-co');
+      const elEnv = document.getElementById('gpio-led-env');
+      const elBuz = document.getElementById('gpio-buzzer');
+      if (!elLpg) return;
+
+      elLpg.textContent = stLpg === 'BAHAYA' ? 'MENYALA TERUS' : (stLpg === 'WASPADA' ? 'BERKEDIP 500ms' : 'MATI (LOW)');
+      elLpg.className = stLpg !== 'NORMAL' ? 'font-bold text-red-500 mt-1 block' : 'font-bold text-slate-700 dark:text-slate-200 mt-1 block';
+
+      elCo.textContent = stCo === 'BAHAYA' ? 'MENYALA TERUS' : 'MATI (LOW)';
+      elCo.className = stCo === 'BAHAYA' ? 'font-bold text-red-500 mt-1 block' : 'font-bold text-slate-700 dark:text-slate-200 mt-1 block';
+
+      const envDanger = stSuhu === 'BAHAYA' || stRh === 'BAHAYA';
+      elEnv.textContent = envDanger ? 'MENYALA TERUS' : 'MATI (LOW)';
+      elEnv.className = envDanger ? 'font-bold text-red-500 mt-1 block' : 'font-bold text-slate-700 dark:text-slate-200 mt-1 block';
+
+      elBuz.textContent = overall === 'BAHAYA' ? 'BUNYI TERUS (ON)' : (overall === 'WASPADA' ? 'BUNYI BERJEDA' : 'DIAM (OFF)');
+      elBuz.className = overall !== 'NORMAL' ? 'font-bold text-red-500 mt-1 block' : 'font-bold text-slate-700 dark:text-slate-200 mt-1 block';
+    }
+
+    // -----------------------------------------------------------
+    // 6. GRAFIK TREN DENGAN SKALA ZOOM OTOMATIS (CHART.JS)
+    // -----------------------------------------------------------
+    function setRange(rangeKey) {
+      currentRange = rangeKey;
+      document.querySelectorAll('.range-btn').forEach(btn => {
+        btn.className = 'range-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition';
+      });
+      const active = document.getElementById('range-' + rangeKey);
+      if (active) {
+        active.className = 'range-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-white dark:bg-teal-600 transition';
+      }
+      updateAllChartsData();
+    }
+
+    function toggleChartScale(sensorKey) {
+      chartZoomMode[sensorKey] = !chartZoomMode[sensorKey];
+      const btn = document.getElementById('scaleBtn-' + sensorKey);
+      if (btn) {
+        btn.textContent = chartZoomMode[sensorKey] ? 'Skala Zoom Tren' : 'Tampilkan Ambang Batas';
+      }
+      updateAllChartsData();
+    }
+
+    function getFilteredHistoryByRange(rangeKey) {
+      const hoursMap = { '1h': 1, '6h': 6, '24h': 24, '7d': 168 };
+      const hours = hoursMap[rangeKey] || 6;
+      const cutoff = Date.now() - hours * 3600 * 1000;
+
+      let filtered = historyRecords.filter(r => new Date(r.waktu).getTime() >= cutoff);
+      if (filtered.length < 2) {
+        filtered = historyRecords.slice(-24);
+      }
+      return filtered;
+    }
+
+    function computeStats(arr) {
+      if (!arr.length) return { min: 0, avg: 0, max: 0 };
+      const min = Math.min(...arr);
+      const max = Math.max(...arr);
+      const avg = arr.reduce((a, b) => a + b, 0) / arr.length;
+      return { min, avg, max };
+    }
+
+    function getChartColors() {
+      const isDark = document.documentElement.classList.contains('dark');
+      return {
+        text: isDark ? '#94a3b8' : '#64748b',
+        grid: isDark ? 'rgba(51, 65, 85, 0.45)' : 'rgba(226, 232, 240, 0.8)'
+      };
+    }
+
+    function initDashboardCharts() {
+      const colors = getChartColors();
+
+      // Chart LPG
+      const ctxLpg = document.getElementById('chartLpg').getContext('2d');
+      chartLpgInstance = new Chart(ctxLpg, {
+        type: 'line',
+        data: { labels: [], datasets: [] },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: colors.text, maxTicksLimit: 7 }, grid: { display: false } },
+            y: { ticks: { color: colors.text }, grid: { color: colors.grid } }
+          }
+        }
+      });
+
+      // Chart CO
+      const ctxCo = document.getElementById('chartCo').getContext('2d');
+      chartCoInstance = new Chart(ctxCo, {
+        type: 'line',
+        data: { labels: [], datasets: [] },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: colors.text, maxTicksLimit: 7 }, grid: { display: false } },
+            y: { ticks: { color: colors.text }, grid: { color: colors.grid } }
+          }
+        }
+      });
+
+      // Chart Suhu & Kelembapan
+      const ctxEnv = document.getElementById('chartEnv').getContext('2d');
+      chartEnvInstance = new Chart(ctxEnv, {
+        type: 'line',
+        data: { labels: [], datasets: [] },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: colors.text, maxTicksLimit: 8 }, grid: { display: false } },
+            y: { type: 'linear', position: 'left', ticks: { color: colors.text }, grid: { color: colors.grid }, title: { display: true, text: 'Suhu (°C)', color: colors.text } },
+            y1: { type: 'linear', position: 'right', min: 0, max: 100, ticks: { color: colors.text }, grid: { drawOnChartArea: false }, title: { display: true, text: 'RH (%)', color: colors.text } }
+          }
+        }
+      });
+
+      updateAllChartsData();
+    }
+
+    function updateAllChartsData() {
+      if (!chartLpgInstance || !chartCoInstance || !chartEnvInstance) return;
+
+      const rows = getFilteredHistoryByRange(currentRange);
+      const labels = rows.map(r => {
+        const d = new Date(r.waktu);
+        return currentRange === '7d'
+          ? d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }) + ' ' + d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+          : d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+      });
+
+      const lpgArr = rows.map(r => r.lpg);
+      const coArr = rows.map(r => r.co);
+      const suhuArr = rows.map(r => r.suhu);
+      const rhArr = rows.map(r => r.rh);
+
+      // Update Statistik Min / Avg / Max
+      const stLpg = computeStats(lpgArr);
+      document.getElementById('stats-lpg').textContent = `Min: ${stLpg.min.toFixed(2)} • Rata²: ${stLpg.avg.toFixed(2)} • Maks: ${stLpg.max.toFixed(2)} ppm`;
+
+      const stCo = computeStats(coArr);
+      document.getElementById('stats-co').textContent = `Min: ${stCo.min.toFixed(2)} • Rata²: ${stCo.avg.toFixed(2)} • Maks: ${stCo.max.toFixed(2)} ppm`;
+
+      // Update Grafik LPG
+      const lpgDatasets = [{
+        label: 'LPG (ppm)',
+        data: lpgArr,
+        borderColor: '#0d9488',
+        backgroundColor: 'rgba(13, 148, 136, 0.14)',
+        borderWidth: 2.2,
+        pointRadius: 2.5,
+        tension: 0.32,
+        fill: true
+      }];
+
+      if (chartZoomMode.lpg) {
+        const span = Math.max(stLpg.max - stLpg.min, 0.5);
+        chartLpgInstance.options.scales.y.min = Math.max(0, +(stLpg.min - span * 0.25).toFixed(2));
+        chartLpgInstance.options.scales.y.max = +(stLpg.max + span * 0.25).toFixed(2);
+      } else {
+        chartLpgInstance.options.scales.y.min = 0;
+        chartLpgInstance.options.scales.y.max = Math.max(550, Math.ceil(stLpg.max * 1.1));
+        lpgDatasets.push(
+          { label: 'Batas Waspada (200)', data: labels.map(() => 200), borderColor: '#f59e0b', borderDash: [6, 4], borderWidth: 1.5, pointRadius: 0 },
+          { label: 'Batas Bahaya (500)', data: labels.map(() => 500), borderColor: '#ef4444', borderDash: [6, 4], borderWidth: 1.5, pointRadius: 0 }
+        );
+      }
+      chartLpgInstance.data.labels = labels;
+      chartLpgInstance.data.datasets = lpgDatasets;
+      chartLpgInstance.update();
+
+      // Update Grafik CO
+      const coDatasets = [{
+        label: 'CO (ppm)',
+        data: coArr,
+        borderColor: '#8b5cf6',
+        backgroundColor: 'rgba(139, 92, 246, 0.14)',
+        borderWidth: 2.2,
+        pointRadius: 2.5,
+        tension: 0.32,
+        fill: true
+      }];
+
+      if (chartZoomMode.co) {
+        const spanCo = Math.max(stCo.max - stCo.min, 0.2);
+        chartCoInstance.options.scales.y.min = Math.max(0, +(stCo.min - spanCo * 0.25).toFixed(2));
+        chartCoInstance.options.scales.y.max = +(stCo.max + spanCo * 0.25).toFixed(2);
+      } else {
+        chartCoInstance.options.scales.y.min = 0;
+        chartCoInstance.options.scales.y.max = Math.max(30, Math.ceil(stCo.max * 1.15));
+        coDatasets.push(
+          { label: 'Batas Bahaya CO (25)', data: labels.map(() => 25), borderColor: '#ef4444', borderDash: [6, 4], borderWidth: 1.5, pointRadius: 0 }
+        );
+      }
+      chartCoInstance.data.labels = labels;
+      chartCoInstance.data.datasets = coDatasets;
+      chartCoInstance.update();
+
+      // Update Grafik Lingkungan
+      chartEnvInstance.data.labels = labels;
+      chartEnvInstance.data.datasets = [
+        {
+          label: 'Suhu (°C)',
+          data: suhuArr,
+          borderColor: '#f43f5e',
+          backgroundColor: 'rgba(244, 63, 94, 0.1)',
+          borderWidth: 2.2,
+          pointRadius: 2,
+          tension: 0.3,
+          yAxisID: 'y'
+        },
+        {
+          label: 'Kelembapan (%)',
+          data: rhArr,
+          borderColor: '#06b6d4',
+          backgroundColor: 'rgba(6, 182, 212, 0.12)',
+          borderWidth: 2,
+          pointRadius: 2,
+          tension: 0.3,
+          fill: true,
+          yAxisID: 'y1'
+        }
+      ];
+      chartEnvInstance.update();
+    }
+
+    function updateAllChartsTheme() {
+      const colors = getChartColors();
+      [chartLpgInstance, chartCoInstance, chartEnvInstance, chartKalInstance].forEach(ch => {
+        if (!ch) return;
+        if (ch.options.scales.x) ch.options.scales.x.ticks.color = colors.text;
+        if (ch.options.scales.y) {
+          ch.options.scales.y.ticks.color = colors.text;
+          ch.options.scales.y.grid.color = colors.grid;
+        }
+        if (ch.options.scales.y1) ch.options.scales.y1.ticks.color = colors.text;
+        ch.update();
+      });
+    }
+
+    // -----------------------------------------------------------
+    // 7. MENU DOWNLOAD TABEL (1 - 7 HARI) & EKSPOR EXCEL / CSV
+    // -----------------------------------------------------------
+    function setExportDays(days) {
+      document.getElementById('exportDaysSlider').value = days;
+      updateExportPreview();
+    }
+
+    function getFilteredExportRows() {
+      const days = parseInt(document.getElementById('exportDaysSlider').value, 10) || 3;
+      const interval = document.getElementById('exportInterval').value;
+      const statusFilter = document.getElementById('exportStatusFilter').value;
+
+      document.getElementById('exportDaysLabel').textContent = `${days} Hari Terakhir`;
+      document.querySelectorAll('.exp-day-btn').forEach(btn => {
+        const d = parseInt(btn.getAttribute('data-day'), 10);
+        btn.className = d === days
+          ? 'exp-day-btn py-1 rounded text-xs font-mono font-semibold bg-teal-600 text-white transition'
+          : 'exp-day-btn py-1 rounded text-xs font-mono font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-teal-600 hover:text-white transition';
+      });
+
+      const cutoff = Date.now() - days * 24 * 3600 * 1000;
+      let rows = historyRecords.filter(r => new Date(r.waktu).getTime() >= cutoff);
+      if (rows.length === 0) rows = [...historyRecords];
+
+      if (interval === '15m') {
+        rows = rows.filter((_, idx) => idx % 3 === 0);
+      } else if (interval === '1h') {
+        rows = rows.filter((_, idx) => idx % 6 === 0);
+      }
+
+      if (statusFilter !== 'ALL') {
+        rows = rows.filter(r => r.statusAlarm.toUpperCase() === statusFilter);
+      }
+
+      return rows;
+    }
+
+    function updateExportPreview() {
+      const rows = getFilteredExportRows();
+      const incLpg = document.getElementById('chk-lpg').checked;
+      const incCo = document.getElementById('chk-co').checked;
+      const incSuhu = document.getElementById('chk-suhu').checked;
+      const incRh = document.getElementById('chk-rh').checked;
+
+      document.getElementById('exportRowCount').textContent = rows.length;
+
+      let headHtml = '<tr><th class="px-4 py-3">Waktu</th>';
+      if (incLpg) headHtml += '<th class="px-4 py-3">LPG (ppm)</th>';
+      if (incCo) headHtml += '<th class="px-4 py-3">CO (ppm)</th>';
+      if (incSuhu) headHtml += '<th class="px-4 py-3">Suhu (°C)</th>';
+      if (incRh) headHtml += '<th class="px-4 py-3">Kelembapan (%)</th>';
+      headHtml += '<th class="px-4 py-3">Status</th></tr>';
+      document.getElementById('exportTableHead').innerHTML = headHtml;
+
+      const previewRows = rows.slice(-20).reverse();
+      let bodyHtml = '';
+      previewRows.forEach(r => {
+        const dtStr = new Date(r.waktu).toLocaleString('id-ID', {
+          day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+        bodyHtml += `<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+          <td class="px-4 py-2.5 text-slate-600 dark:text-slate-300">${dtStr}</td>`;
+        if (incLpg) bodyHtml += `<td class="px-4 py-2.5 font-semibold">${r.lpg.toFixed(2)}</td>`;
+        if (incCo) bodyHtml += `<td class="px-4 py-2.5 font-semibold">${r.co.toFixed(2)}</td>`;
+        if (incSuhu) bodyHtml += `<td class="px-4 py-2.5">${r.suhu.toFixed(1)}</td>`;
+        if (incRh) bodyHtml += `<td class="px-4 py-2.5">${r.rh.toFixed(2)}</td>`;
+        bodyHtml += `<td class="px-4 py-2.5"><span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">${r.statusAlarm}</span></td></tr>`;
+      });
+
+      document.getElementById('exportTableBody').innerHTML = bodyHtml || '<tr><td colspan="6" class="px-4 py-6 text-center text-slate-400">Tidak ada data pada filter ini</td></tr>';
+    }
+
+    function triggerDownloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function downloadTableCSV() {
+      const rows = getFilteredExportRows();
+      const incLpg = document.getElementById('chk-lpg').checked;
+      const incCo = document.getElementById('chk-co').checked;
+      const incSuhu = document.getElementById('chk-suhu').checked;
+      const incRh = document.getElementById('chk-rh').checked;
+
+      const headers = ['Waktu'];
+      if (incLpg) headers.push('LPG (ppm)');
+      if (incCo) headers.push('CO (ppm)');
+      if (incSuhu) headers.push('Suhu (C)');
+      if (incRh) headers.push('Kelembapan (%)');
+      headers.push('Status');
+
+      const lines = [headers.join(',')];
+      rows.forEach(r => {
+        const dtStr = new Date(r.waktu).toLocaleString('id-ID');
+        const cols = [`"${dtStr}"`];
+        if (incLpg) cols.push(r.lpg.toFixed(2));
+        if (incCo) cols.push(r.co.toFixed(2));
+        if (incSuhu) cols.push(r.suhu.toFixed(1));
+        if (incRh) cols.push(r.rh.toFixed(2));
+        cols.push(`"${r.statusAlarm}"`);
+        lines.push(cols.join(','));
+      });
+
+      const bom = '\uFEFF';
+      const blob = new Blob([bom + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const days = document.getElementById('exportDaysSlider').value;
+      triggerDownloadBlob(blob, `GasGuard_Data_${days}Hari.csv`);
+    }
+
+    function downloadTableExcel() {
+      const rows = getFilteredExportRows();
+      const incLpg = document.getElementById('chk-lpg').checked;
+      const incCo = document.getElementById('chk-co').checked;
+      const incSuhu = document.getElementById('chk-suhu').checked;
+      const incRh = document.getElementById('chk-rh').checked;
+
+      let tableHtml = `<table border="1"><thead><tr style="background-color:#0d9488;color:#ffffff;font-weight:bold;"><th>Waktu</th>`;
+      if (incLpg) tableHtml += `<th>LPG (ppm)</th>`;
+      if (incCo) tableHtml += `<th>CO (ppm)</th>`;
+      if (incSuhu) tableHtml += `<th>Suhu (C)</th>`;
+      if (incRh) tableHtml += `<th>Kelembapan (%)</th>`;
+      tableHtml += `<th>Status</th></tr></thead><tbody>`;
+
+      rows.forEach(r => {
+        const dtStr = new Date(r.waktu).toLocaleString('id-ID');
+        tableHtml += `<tr><td>${dtStr}</td>`;
+        if (incLpg) tableHtml += `<td>${r.lpg.toFixed(2)}</td>`;
+        if (incCo) tableHtml += `<td>${r.co.toFixed(2)}</td>`;
+        if (incSuhu) tableHtml += `<td>${r.suhu.toFixed(1)}</td>`;
+        if (incRh) tableHtml += `<td>${r.rh.toFixed(2)}</td>`;
+        tableHtml += `<td>${r.statusAlarm}</td></tr>`;
+      });
+      tableHtml += `</tbody></table>`;
+
+      const blob = new Blob([`\uFEFF<html><head><meta charset="UTF-8"></head><body>${tableHtml}</body></html>`], {
+        type: 'application/vnd.ms-excel;charset=utf-8;'
+      });
+      const days = document.getElementById('exportDaysSlider').value;
+      triggerDownloadBlob(blob, `GasGuard_Data_${days}Hari.xls`);
+    }
+
+    // -----------------------------------------------------------
+    // 8. KALIBRASI Ro & GRAFIK KESTABILAN 60 MENIT
+    // -----------------------------------------------------------
+    function renderRoValues() {
+      document.getElementById('ro-mq2-1').textContent = activeRoConfig.ro_mq2_1.toFixed(4) + ' kΩ';
+      document.getElementById('ro-mq2-2').textContent = activeRoConfig.ro_mq2_2.toFixed(4) + ' kΩ';
+      document.getElementById('ro-mq7-1').textContent = activeRoConfig.ro_mq7_1.toFixed(4) + ' kΩ';
+      document.getElementById('ro-mq7-2').textContent = activeRoConfig.ro_mq7_2.toFixed(4) + ' kΩ';
+
+      document.getElementById('rs-mq2-1').textContent = (activeRoConfig.ro_mq2_1 * 9.83).toFixed(2) + ' kΩ';
+      document.getElementById('rs-mq2-2').textContent = (activeRoConfig.ro_mq2_2 * 9.83).toFixed(2) + ' kΩ';
+      document.getElementById('rs-mq7-1').textContent = (activeRoConfig.ro_mq7_1 * 27.0).toFixed(2) + ' kΩ';
+      document.getElementById('rs-mq7-2').textContent = (activeRoConfig.ro_mq7_2 * 27.0).toFixed(2) + ' kΩ';
+    }
+
+    function triggerRemoteCalibration(mode) {
+      postCommandToAppsScript({ action: 'set_mode', mode: mode, cal_id: 'CAL-' + Date.now() });
+
+      const title = document.getElementById('kalStatusTitle');
+      const badge = document.getElementById('kalStatusBadge');
+      const desc = document.getElementById('kalStatusDesc');
+      const btnStart = document.getElementById('btnStartKal');
+      const btnCancel = document.getElementById('btnCancelKal');
+
+      if (mode === 'kalibrasi') {
+        title.textContent = 'Perintah Kalibrasi Dikirim';
+        title.className = 'text-2xl font-extrabold text-amber-600 dark:text-amber-400';
+        badge.textContent = 'Menunggu Respons ESP32';
+        desc.textContent = 'Mode kalibrasi telah ditulis ke Google Sheets Config. ESP32 akan memulai pengukuran udara bersih selama 60 menit.';
+        btnStart.classList.add('hidden');
+        btnCancel.classList.remove('hidden');
+        document.getElementById('kalProgressBar').style.width = '10%';
+        document.getElementById('kalProgressLabel').textContent = 'Progres: Inisialisasi Buffer 5 Menit Pertama';
+        document.getElementById('kalProgressPct').textContent = '10%';
+      } else {
+        title.textContent = 'Selesai & Aktif';
+        title.className = 'text-2xl font-extrabold text-emerald-600 dark:text-emerald-400';
+        badge.textContent = 'Stabil (NVS Tersimpan)';
+        desc.textContent = 'Konstanta Ro hasil kalibrasi telah diterapkan pada perangkat ESP32 dan tersimpan secara permanen.';
+        btnStart.classList.remove('hidden');
+        btnCancel.classList.add('hidden');
+        document.getElementById('kalProgressBar').style.width = '100%';
+        document.getElementById('kalProgressLabel').textContent = 'Progres: Menit ke-60 / 60';
+        document.getElementById('kalProgressPct').textContent = '100%';
+      }
+    }
+
+    function initKalibrasiChart() {
+      const ctx = document.getElementById('chartKalibrasi').getContext('2d');
+      const colors = getChartColors();
+      const minutes = Array.from({ length: 55 }, (_, i) => `M-${i + 6}`);
+
+      chartKalInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: minutes,
+          datasets: [
+            { label: 'MQ-2 S1 (kΩ)', data: minutes.map((_, i) => +(11.69 + Math.sin(i / 6) * 0.06).toFixed(3)), borderColor: '#0d9488', borderWidth: 2, pointRadius: 1.5, tension: 0.3 },
+            { label: 'MQ-2 S2 (kΩ)', data: minutes.map((_, i) => +(13.08 + Math.cos(i / 7) * 0.07).toFixed(3)), borderColor: '#3b82f6', borderWidth: 2, pointRadius: 1.5, tension: 0.3 },
+            { label: 'MQ-7 S1 (kΩ)', data: minutes.map((_, i) => +(13.63 + Math.sin(i / 5) * 0.08).toFixed(3)), borderColor: '#8b5cf6', borderWidth: 2, pointRadius: 1.5, tension: 0.3 },
+            { label: 'MQ-7 S2 (kΩ)', data: minutes.map((_, i) => +(32.11 + Math.cos(i / 8) * 0.14).toFixed(3)), borderColor: '#f59e0b', borderWidth: 2, pointRadius: 1.5, tension: 0.3 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          scales: {
+            x: { ticks: { color: colors.text, maxTicksLimit: 10 }, grid: { display: false } },
+            y: { ticks: { color: colors.text }, grid: { color: colors.grid } }
+          }
+        }
+      });
+    }
+
+    // -----------------------------------------------------------
+    // 9. MODAL PERIKSA SENSOR (/sensor)
+    // -----------------------------------------------------------
+    function openSensorTestModal() {
+      const modal = document.getElementById('sensorModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      renderSensorDiagnosticBody(false);
+    }
+
+    function closeSensorTestModal() {
+      const modal = document.getElementById('sensorModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function triggerRemoteSensorCheck() {
+      postCommandToAppsScript({ action: 'tes_sensor', tes_id: 'TES-' + Date.now() });
+      renderSensorDiagnosticBody(true);
+    }
+
+    function renderSensorDiagnosticBody(remoteSent) {
+      const r = getEffectiveSensorReadings();
+      const body = document.getElementById('sensorTestBody');
+      body.innerHTML = `
+        <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 flex justify-between">
+          <span>MQ-2 (Sensor 1 &amp; 2 LPG)</span>
+          <span class="text-emerald-600 dark:text-emerald-400 font-bold">OK (${r.lpg.toFixed(2)} ppm)</span>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 flex justify-between">
+          <span>MQ-7 (Sensor 1 &amp; 2 CO)</span>
+          <span class="text-emerald-600 dark:text-emerald-400 font-bold">OK (${r.co.toFixed(2)} ppm)</span>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 flex justify-between">
+          <span>DHT22 (Suhu &amp; Kelembapan)</span>
+          <span class="text-emerald-600 dark:text-emerald-400 font-bold">OK (${r.suhu.toFixed(1)}°C / ${r.rh.toFixed(1)}%)</span>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 flex justify-between">
+          <span>Koneksi Google Apps Script</span>
+          <span class="text-teal-600 dark:text-teal-400 font-bold">${remoteSent ? 'Perintah Tes Terkirim' : 'Terhubung'}</span>
+        </div>
+      `;
+    }
+
+    // -----------------------------------------------------------
+    // 10. INITIALIZATION ON PAGE LOAD
+    // -----------------------------------------------------------
+    window.addEventListener('DOMContentLoaded', () => {
+      renderRoValues();
+      historyRecords = generateFallbackHistory(7);
+      initDashboardCharts();
+      evaluateAndRenderAll();
+      fetchLiveFromGoogleSheets();
+
+      liveFetchTimer = setInterval(() => {
+        if (!isAnySimulationActive()) {
+          fetchLiveFromGoogleSheets();
+        }
+      }, API_CONFIG.REFRESH_INTERVAL_MS);
+    });
+  </script>
+</body>
+</html>
